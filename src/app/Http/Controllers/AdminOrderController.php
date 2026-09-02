@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Pesanan;
+use App\Models\Bahan;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class AdminOrderController extends Controller
@@ -30,15 +32,42 @@ class AdminOrderController extends Controller
             'alasan_pembatalan' => 'required_if:status,Dibatalkan|nullable|string'
         ]);
 
-        $pesanan = Pesanan::findOrFail($id);
-        $pesanan->status = $request->status;
+        $pesanan = Pesanan::with(['detailPesanans.menu.bahans', 'detailPesanans.tambahans.bahans'])->findOrFail($id);
 
-        if ($request->status === 'Dibatalkan') {
-            $pesanan->alasan_pembatalan = $request->alasan_pembatalan;
-        }
+        DB::transaction(function () use ($pesanan, $request) {
+            // Jika status diubah menjadi Dibatalkan dari status sebelumnya yang aktif
+            if ($request->status === 'Dibatalkan' && $pesanan->status !== 'Dibatalkan') {
+                foreach ($pesanan->detailPesanans as $detail) {
+                    $qty = $detail->jumlah;
 
-        $pesanan->id_admin = session('admin_id');
-        $pesanan->save();
+                    // Kembalikan stok bahan dari Menu
+                    if ($detail->menu && $detail->menu->bahans) {
+                        foreach ($detail->menu->bahans as $bahan) {
+                            $kebutuhan = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                            $bahan->increment('stok', $kebutuhan);
+                        }
+                    }
+
+                    // Kembalikan stok bahan dari Tambahan
+                    if ($detail->tambahans) {
+                        foreach ($detail->tambahans as $tambahan) {
+                            if ($tambahan->bahans) {
+                                foreach ($tambahan->bahans as $bahan) {
+                                    $kebutuhan = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                                    $bahan->increment('stok', $kebutuhan);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $pesanan->alasan_pembatalan = $request->alasan_pembatalan;
+            }
+
+            $pesanan->status = $request->status;
+            $pesanan->id_admin = session('admin_id');
+            $pesanan->save();
+        });
 
         return redirect()->back()->with('success', 'Status pesanan #' . $pesanan->id_pesanan . ' berhasil diperbarui!');
     }

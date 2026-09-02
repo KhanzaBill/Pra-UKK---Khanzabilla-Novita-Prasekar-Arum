@@ -8,7 +8,7 @@
     /* ===== Override layout ===== */
     .app-header { display: none !important; }
     .content { padding: 0 !important; }
-    .alert-success, .alert-error { display: none !important; }
+    .alert-success, .alert-error { display: none !important; } /* hide layout alert because handled in cart-body */
 
     /* ===== Header ===== */
     .cart-header-bar {
@@ -348,6 +348,24 @@
 </div>
 
 <div class="cart-body">
+    @if(session('error'))
+        <div style="background: #FFEBEE; border: 1.5px solid #FFCDD2; color: #C62828; padding: 14px 16px; border-radius: 14px; margin-bottom: 16px; font-size: 0.88rem; display: flex; align-items: flex-start; gap: 10px; line-height: 1.4; box-shadow: 0 2px 8px rgba(198,40,40,0.08);">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 1.1rem; margin-top: 2px; color: #D32F2F;"></i>
+            <div style="flex: 1;">
+                <strong>Perhatian:</strong> {{ session('error') }}
+            </div>
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div style="background: #E8F5E9; border: 1.5px solid #A5D6A7; color: #2E7D32; padding: 12px 16px; border-radius: 14px; margin-bottom: 16px; font-size: 0.88rem; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(46,125,50,0.08);">
+            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem; color: #2E7D32;"></i>
+            <div style="flex: 1;">
+                {{ session('success') }}
+            </div>
+        </div>
+    @endif
+
     @if(empty($cart))
         <div class="cart-empty">
             <i class="fa-solid fa-cart-flatbed"></i>

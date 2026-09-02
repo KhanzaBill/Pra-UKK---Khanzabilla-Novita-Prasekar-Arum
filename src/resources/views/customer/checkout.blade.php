@@ -456,6 +456,15 @@
 </div>
 
 <div class="checkout-body">
+    @if(session('error'))
+        <div style="background: #FFEBEE; border: 1.5px solid #FFCDD2; color: #C62828; padding: 14px 16px; border-radius: 14px; margin-bottom: 16px; font-size: 0.88rem; display: flex; align-items: flex-start; gap: 10px; line-height: 1.4; box-shadow: 0 2px 8px rgba(198,40,40,0.08);">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 1.1rem; margin-top: 2px; color: #D32F2F;"></i>
+            <div style="flex: 1;">
+                <strong>Perhatian:</strong> {{ session('error') }}
+            </div>
+        </div>
+    @endif
+
     <form id="checkoutForm" action="{{ route('customer.store_order') }}" method="POST">
         @csrf
 

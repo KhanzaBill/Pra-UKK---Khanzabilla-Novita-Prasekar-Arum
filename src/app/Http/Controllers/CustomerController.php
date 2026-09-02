@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Menu;
 use App\Models\Tambahan;
+use App\Models\Bahan;
 use App\Models\Meja;
 use App\Models\Pesanan;
 use App\Models\DetailPesanan;
@@ -58,7 +59,7 @@ class CustomerController extends Controller
             $kategoriActive = 'Paket';
         }
 
-        $query = Menu::query();
+        $query = Menu::with('bahans');
 
         if ($kategoriActive && $kategoriActive !== 'Semua') {
             $query->where('kategori', $kategoriActive);
@@ -77,8 +78,12 @@ class CustomerController extends Controller
     // Halaman 3: Detail Menu
     public function detailMenu(Request $request, $id)
     {
-        $menu = Menu::findOrFail($id);
-        $tambahans = Tambahan::all();
+        $menu = Menu::with('bahans')->findOrFail($id);
+        if (!$menu->isTersedia()) {
+            return redirect()->route('customer.menu')->with('error', 'Maaf, menu ' . $menu->nama_menu . ' saat ini sedang habis / tidak tersedia.');
+        }
+
+        $tambahans = Tambahan::with('bahans')->get();
 
         $editHash = $request->query('edit_hash');
         $editItem = null;
@@ -92,7 +97,10 @@ class CustomerController extends Controller
     // Tambah / Edit Item Keranjang
     public function addToCart(Request $request)
     {
-        $menu = Menu::findOrFail($request->id_menu);
+        $menu = Menu::with('bahans')->findOrFail($request->id_menu);
+        if (!$menu->isTersedia()) {
+            return redirect()->route('customer.menu')->with('error', 'Maaf, menu ' . $menu->nama_menu . ' saat ini sedang tidak tersedia.');
+        }
 
         $levelPedas = null;
         if ($menu->opsi_pedas === 'Ya') {
@@ -245,12 +253,97 @@ class CustomerController extends Controller
         return redirect()->route('customer.cart')->with('success', 'Item berhasil dihapus');
     }
 
+    /**
+     * Helper untuk memvalidasi ketersediaan stok semua item di keranjang
+     * Return null jika valid/cukup, atau string pesan error jika ada yang tidak cukup
+     */
+    private function checkCartStockAvailability($cart): ?string
+    {
+        if (empty($cart)) {
+            return 'Keranjang Anda masih kosong.';
+        }
+
+        $bahanRequirements = []; // [id_bahan => total_needed]
+        $itemBahanSources = [];  // [id_bahan => ['menu_name' => ..., 'is_paket' => ..., 'bahan_name' => ..., 'type' => ...]]
+
+        foreach ($cart as $item) {
+            $menu = Menu::with('bahans')->find($item['id_menu']);
+            if (!$menu || $menu->status_stok === 'Habis') {
+                $menuName = $menu ? $menu->nama_menu : 'Menu';
+                return "Maaf, menu '{$menuName}' saat ini sedang habis / tidak tersedia.";
+            }
+
+            $qty = (int) $item['jumlah'];
+            foreach ($menu->bahans as $bahan) {
+                $needed = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                $bahanRequirements[$bahan->id_bahan] = ($bahanRequirements[$bahan->id_bahan] ?? 0) + $needed;
+                $itemBahanSources[$bahan->id_bahan] = [
+                    'menu_name' => $menu->nama_menu,
+                    'is_paket' => ($menu->kategori === 'Paket'),
+                    'bahan_name' => $bahan->nama_bahan,
+                    'type' => 'menu'
+                ];
+            }
+
+            if (!empty($item['tambahans'])) {
+                foreach ($item['tambahans'] as $t) {
+                    $tambahan = Tambahan::with('bahans')->find($t['id_tambahan']);
+                    if (!$tambahan || $tambahan->status_stok === 'Habis') {
+                        $tName = $tambahan ? $tambahan->nama_tambahan : 'Tambahan';
+                        return "Maaf, menu tambahan '{$tName}' saat ini sedang habis.";
+                    }
+
+                    foreach ($tambahan->bahans as $bahan) {
+                        $needed = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                        $bahanRequirements[$bahan->id_bahan] = ($bahanRequirements[$bahan->id_bahan] ?? 0) + $needed;
+                        $itemBahanSources[$bahan->id_bahan] = [
+                            'menu_name' => $tambahan->nama_tambahan,
+                            'is_paket' => false,
+                            'bahan_name' => $bahan->nama_bahan,
+                            'type' => 'tambahan'
+                        ];
+                    }
+                }
+            }
+        }
+
+        if (!empty($bahanRequirements)) {
+            $bahans = Bahan::whereIn('id_bahan', array_keys($bahanRequirements))->get()->keyBy('id_bahan');
+
+            foreach ($bahanRequirements as $idBahan => $totalNeeded) {
+                $bahan = $bahans->get($idBahan);
+                if (!$bahan || $bahan->stok < $totalNeeded) {
+                    $stokTersedia = $bahan ? $bahan->stok : 0;
+                    $source = $itemBahanSources[$idBahan] ?? null;
+
+                    if ($source) {
+                        if ($source['type'] === 'tambahan') {
+                            return "Stok bahan '{$source['bahan_name']}' untuk tambahan '{$source['menu_name']}' tidak mencukupi. Silakan sesuaikan pesanan Anda.";
+                        } else {
+                            return "Stok bahan '{$source['bahan_name']}' untuk menu '{$source['menu_name']}' tidak mencukupi. Silakan sesuaikan pesanan Anda.";
+                        }
+                    } else {
+                        return "Stok bahan tidak mencukupi untuk memenuhi pesanan Anda.";
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     // Halaman 5: Checkout
     public function checkout()
     {
         $cart = session('cart', []);
         if (empty($cart)) {
             return redirect()->route('customer.menu')->with('error', 'Keranjang Anda masih kosong');
+        }
+
+        // Cek ketersediaan stok sebelum masuk halaman konfirmasi pembayaran
+        $stockError = $this->checkCartStockAvailability($cart);
+        if ($stockError) {
+            return redirect()->route('customer.cart')->with('error', $stockError);
         }
 
         $totalHarga = array_sum(array_column($cart, 'subtotal'));
@@ -279,6 +372,87 @@ class CustomerController extends Controller
 
         DB::beginTransaction();
         try {
+            // 1. Agregasi total kebutuhan setiap bahan dan validasi status_stok manual
+            $bahanRequirements = []; // [id_bahan => total_needed]
+            $itemBahanSources = [];  // [id_bahan => ['menu_name' => ..., 'is_paket' => ..., 'bahan_name' => ...]]
+
+            foreach ($cart as $item) {
+                $menu = Menu::with('bahans')->find($item['id_menu']);
+                if (!$menu || $menu->status_stok === 'Habis') {
+                    DB::rollBack();
+                    $menuName = $menu ? $menu->nama_menu : 'Menu';
+                    return redirect()->route('customer.cart')->with('error', "Maaf, menu '{$menuName}' saat ini sedang habis / tidak tersedia.");
+                }
+
+                $qty = (int) $item['jumlah'];
+                foreach ($menu->bahans as $bahan) {
+                    $needed = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                    $bahanRequirements[$bahan->id_bahan] = ($bahanRequirements[$bahan->id_bahan] ?? 0) + $needed;
+                    $itemBahanSources[$bahan->id_bahan] = [
+                        'menu_name' => $menu->nama_menu,
+                        'is_paket' => ($menu->kategori === 'Paket'),
+                        'bahan_name' => $bahan->nama_bahan,
+                        'type' => 'menu'
+                    ];
+                }
+
+                if (!empty($item['tambahans'])) {
+                    foreach ($item['tambahans'] as $t) {
+                        $tambahan = Tambahan::with('bahans')->find($t['id_tambahan']);
+                        if (!$tambahan || $tambahan->status_stok === 'Habis') {
+                            DB::rollBack();
+                            $tName = $tambahan ? $tambahan->nama_tambahan : 'Tambahan';
+                            return redirect()->route('customer.cart')->with('error', "Maaf, menu tambahan '{$tName}' saat ini sedang habis.");
+                        }
+
+                        foreach ($tambahan->bahans as $bahan) {
+                            $needed = ($bahan->pivot->jumlah_dibutuhkan ?? 1) * $qty;
+                            $bahanRequirements[$bahan->id_bahan] = ($bahanRequirements[$bahan->id_bahan] ?? 0) + $needed;
+                            $itemBahanSources[$bahan->id_bahan] = [
+                                'menu_name' => $tambahan->nama_tambahan,
+                                'is_paket' => false,
+                                'bahan_name' => $bahan->nama_bahan,
+                                'type' => 'tambahan'
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // 2. Kunci baris bahan untuk mencegah race condition dan validasi kuantitas
+            if (!empty($bahanRequirements)) {
+                $lockedBahans = Bahan::whereIn('id_bahan', array_keys($bahanRequirements))
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id_bahan');
+
+                foreach ($bahanRequirements as $idBahan => $totalNeeded) {
+                    $bahan = $lockedBahans->get($idBahan);
+                    if (!$bahan || $bahan->stok < $totalNeeded) {
+                        DB::rollBack();
+                        $stokTersedia = $bahan ? $bahan->stok : 0;
+                        $source = $itemBahanSources[$idBahan] ?? null;
+                        if ($source) {
+                            if ($source['type'] === 'tambahan') {
+                                $pesan = "Stok bahan '{$source['bahan_name']}' untuk tambahan '{$source['menu_name']}' tidak mencukupi (Tersedia: {$stokTersedia}, Dibutuhkan: {$totalNeeded}). Silakan sesuaikan pesanan Anda.";
+                            } else {
+                                $pesan = "Stok bahan '{$source['bahan_name']}' untuk menu '{$source['menu_name']}' tidak mencukupi (Tersedia: {$stokTersedia}, Dibutuhkan: {$totalNeeded}). Silakan sesuaikan pesanan Anda.";
+                            }
+                        } else {
+                            $pesan = "Stok bahan tidak mencukupi untuk memenuhi pesanan Anda.";
+                        }
+                        return redirect()->route('customer.cart')->with('error', $pesan);
+                    }
+                }
+
+                // 3. Kurangi stok bahan secara otomatis
+                foreach ($bahanRequirements as $idBahan => $totalNeeded) {
+                    $bahan = $lockedBahans->get($idBahan);
+                    $bahan->decrement('stok', $totalNeeded);
+                }
+            }
+
+            // 4. Simpan data pesanan
             $pesanan = Pesanan::create([
                 'id_meja' => $idMeja,
                 'id_admin' => null,
@@ -319,7 +493,7 @@ class CustomerController extends Controller
             return redirect()->route('customer.receipt', $pesanan->id_pesanan);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
+            return redirect()->route('customer.cart')->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
     }
 

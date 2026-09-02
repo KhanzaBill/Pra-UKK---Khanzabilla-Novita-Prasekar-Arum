@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminMenuController;
+use App\Http\Controllers\AdminBahanController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Middleware\AdminAuthMiddleware;
 
@@ -48,6 +49,13 @@ Route::middleware([AdminAuthMiddleware::class])->prefix('admin')->name('admin.')
     Route::put('/menus/{id}', [AdminMenuController::class, 'update'])->name('menus.update');
     Route::post('/menus/{id}/toggle-stok', [AdminMenuController::class, 'toggleStok'])->name('menus.toggle_stok');
     Route::delete('/menus/{id}', [AdminMenuController::class, 'destroy'])->name('menus.destroy');
+
+    // Kelola Stok Bahan (CRUD)
+    Route::get('/bahans', [AdminBahanController::class, 'index'])->name('bahans.index');
+    Route::post('/bahans', [AdminBahanController::class, 'store'])->name('bahans.store');
+    Route::put('/bahans/{id}', [AdminBahanController::class, 'update'])->name('bahans.update');
+    Route::post('/bahans/{id}/quick-stock', [AdminBahanController::class, 'quickStock'])->name('bahans.quick_stock');
+    Route::delete('/bahans/{id}', [AdminBahanController::class, 'destroy'])->name('bahans.destroy');
 
     // Kelola Tambahan (CRUD)
     Route::post('/tambahans', [AdminMenuController::class, 'storeTambahan'])->name('tambahans.store');

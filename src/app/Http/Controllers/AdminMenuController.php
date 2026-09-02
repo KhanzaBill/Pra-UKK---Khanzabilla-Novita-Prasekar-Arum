@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Menu;
 use App\Models\Tambahan;
+use App\Models\Bahan;
 use App\Models\Meja;
 
 class AdminMenuController extends Controller
@@ -15,7 +16,7 @@ class AdminMenuController extends Controller
         $kategori = $request->query('kategori');
         $search = trim($request->query('search', ''));
 
-        $query = Menu::query();
+        $query = Menu::with('bahans');
 
         if ($kategori) {
             $query->where('kategori', $kategori);
@@ -27,15 +28,17 @@ class AdminMenuController extends Controller
 
         $menus = $query->orderByRaw('CAST(id_menu AS UNSIGNED) ASC')->paginate(10)->withQueryString();
     
-        $tambahans = Tambahan::all();
+        $tambahans = Tambahan::with('bahans')->get();
+        $allBahans = Bahan::orderBy('nama_bahan', 'asc')->get();
 
-        return view('admin.menus.index', compact('menus', 'tambahans', 'kategori', 'search'));
+        return view('admin.menus.index', compact('menus', 'tambahans', 'allBahans', 'kategori', 'search'));
     }
 
     // Form Tambah Menu
     public function create()
     {
-        return view('admin.menus.create');
+        $allBahans = Bahan::orderBy('nama_bahan', 'asc')->get();
+        return view('admin.menus.create', compact('allBahans'));
     }
 
     // Store Menu
@@ -49,15 +52,28 @@ class AdminMenuController extends Controller
             'status_stok' => 'required|in:Tersedia,Habis',
             'opsi_pedas' => 'required|in:Ya,Tidak',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'bahans' => 'nullable|array',
+            'bahans.*.id_bahan' => 'nullable|exists:bahans,id_bahan',
+            'bahans.*.jumlah_dibutuhkan' => 'nullable|integer|min:1',
         ]);
 
-        $data = $request->except('foto');
+        $data = $request->except(['foto', 'bahans']);
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('menu', 'public');
         }
 
-        Menu::create($data);
+        $menu = Menu::create($data);
+
+        if ($request->has('bahans') && is_array($request->bahans)) {
+            $syncData = [];
+            foreach ($request->bahans as $b) {
+                if (!empty($b['id_bahan'])) {
+                    $syncData[$b['id_bahan']] = ['jumlah_dibutuhkan' => max(1, (int) ($b['jumlah_dibutuhkan'] ?? 1))];
+                }
+            }
+            $menu->bahans()->sync($syncData);
+        }
 
         return redirect()->route('admin.menus.index')->with('success', 'Menu baru berhasil ditambahkan!');
     }
@@ -65,8 +81,9 @@ class AdminMenuController extends Controller
     // Form Edit Menu
     public function edit($id)
     {
-        $menu = Menu::findOrFail($id);
-        return view('admin.menus.edit', compact('menu'));
+        $menu = Menu::with('bahans')->findOrFail($id);
+        $allBahans = Bahan::orderBy('nama_bahan', 'asc')->get();
+        return view('admin.menus.edit', compact('menu', 'allBahans'));
     }
 
     // Update Menu
@@ -80,10 +97,13 @@ class AdminMenuController extends Controller
             'status_stok' => 'required|in:Tersedia,Habis',
             'opsi_pedas' => 'required|in:Ya,Tidak',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+            'bahans' => 'nullable|array',
+            'bahans.*.id_bahan' => 'nullable|exists:bahans,id_bahan',
+            'bahans.*.jumlah_dibutuhkan' => 'nullable|integer|min:1',
         ]);
 
         $menu = Menu::findOrFail($id);
-        $data = $request->except(['foto', 'hapus_foto']);
+        $data = $request->except(['foto', 'hapus_foto', 'bahans']);
 
         if ($request->has('hapus_foto') && $request->hapus_foto == '1') {
             if ($menu->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($menu->foto)) {
@@ -100,6 +120,18 @@ class AdminMenuController extends Controller
         }
 
         $menu->update($data);
+
+        if ($request->has('bahans') && is_array($request->bahans)) {
+            $syncData = [];
+            foreach ($request->bahans as $b) {
+                if (!empty($b['id_bahan'])) {
+                    $syncData[$b['id_bahan']] = ['jumlah_dibutuhkan' => max(1, (int) ($b['jumlah_dibutuhkan'] ?? 1))];
+                }
+            }
+            $menu->bahans()->sync($syncData);
+        } else {
+            $menu->bahans()->detach();
+        }
 
         return redirect()->route('admin.menus.index')->with('success', 'Menu berhasil diperbarui!');
     }
@@ -118,6 +150,7 @@ class AdminMenuController extends Controller
     public function destroy($id)
     {
         $menu = Menu::findOrFail($id);
+        $menu->bahans()->detach();
         $menu->delete();
 
         return redirect()->route('admin.menus.index')->with('success', 'Menu berhasil dihapus!');
@@ -129,15 +162,20 @@ class AdminMenuController extends Controller
         $request->validate([
             'nama_tambahan' => 'required|string|max:255',
             'harga' => 'required|integer|min:0',
-            'status_stok' => 'nullable|in:Tersedia,Habis'
+            'status_stok' => 'nullable|in:Tersedia,Habis',
+            'id_bahan' => 'nullable|exists:bahans,id_bahan'
         ]);
 
-        $data = $request->all();
+        $data = $request->except(['id_bahan']);
         if (empty($data['status_stok'])) {
             $data['status_stok'] = 'Tersedia';
         }
 
-        Tambahan::create($data);
+        $tambahan = Tambahan::create($data);
+
+        if ($request->filled('id_bahan')) {
+            $tambahan->bahans()->sync([$request->id_bahan => ['jumlah_dibutuhkan' => 1]]);
+        }
 
         return redirect()->back()->with('success', 'Menu Tambahan berhasil ditambahkan!');
     }
@@ -147,11 +185,19 @@ class AdminMenuController extends Controller
         $request->validate([
             'nama_tambahan' => 'required|string|max:255',
             'harga' => 'required|integer|min:0',
-            'status_stok' => 'nullable|in:Tersedia,Habis'
+            'status_stok' => 'nullable|in:Tersedia,Habis',
+            'id_bahan' => 'nullable|exists:bahans,id_bahan'
         ]);
 
         $tambahan = Tambahan::findOrFail($id);
-        $tambahan->update($request->all());
+        $data = $request->except(['id_bahan']);
+        $tambahan->update($data);
+
+        if ($request->filled('id_bahan')) {
+            $tambahan->bahans()->sync([$request->id_bahan => ['jumlah_dibutuhkan' => 1]]);
+        } else {
+            $tambahan->bahans()->detach();
+        }
 
         return redirect()->back()->with('success', 'Menu Tambahan berhasil diperbarui!');
     }
@@ -168,6 +214,7 @@ class AdminMenuController extends Controller
     public function destroyTambahan($id)
     {
         $tambahan = Tambahan::findOrFail($id);
+        $tambahan->bahans()->detach();
         $tambahan->delete();
 
         return redirect()->back()->with('success', 'Menu Tambahan berhasil dihapus!');

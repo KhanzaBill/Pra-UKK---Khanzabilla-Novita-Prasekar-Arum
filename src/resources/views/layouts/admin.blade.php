@@ -771,6 +771,11 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('admin.bahans.index') }}" class="{{ request()->routeIs('admin.bahans*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-cubes-stacked"></i> Kelola Stok
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('admin.reports') }}" class="{{ request()->routeIs('admin.reports*') ? 'active' : '' }}">
                     <i class="fa-solid fa-chart-line"></i> Laporan Penjualan
                 </a>

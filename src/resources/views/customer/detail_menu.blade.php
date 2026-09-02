@@ -679,7 +679,7 @@
 
             <div id="tambahans-list">
                 @foreach($tambahans as $tambahan)
-                    @php $isHabis = ($tambahan->status_stok === 'Habis'); @endphp
+                    @php $isHabis = !$tambahan->isTersedia(); @endphp
                     <label class="addon-item" style="{{ $isHabis ? 'opacity: 0.55; cursor: not-allowed;' : '' }}">
                         <span class="addon-name">
                             {{ $tambahan->nama_tambahan }}

@@ -91,6 +91,25 @@
             </div>
         </div>
 
+        <!-- Resep Bahan Mentah -->
+        <div style="background: #FAFAFA; border: 1.5px solid var(--border); border-radius: 14px; padding: 20px; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px;">
+                        <i class="fa-solid fa-cubes-stacked" style="color: var(--primary);"></i> Resep Bahan yang Dibutuhkan (Otomatisasi Stok)
+                    </h3>
+                    <p style="font-size: 0.78rem; color: var(--text-sub);">Tentukan bahan mentah yang akan otomatis dipotong saat menu ini dipesan.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-accent" onclick="addBahanRow()">
+                    <i class="fa-solid fa-plus"></i> Tambah Bahan
+                </button>
+            </div>
+
+            <div id="bahanRowsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Baris Bahan akan ditambahkan via JS -->
+            </div>
+        </div>
+
         <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
             <a href="{{ route('admin.menus.index') }}" class="btn btn-secondary">Batal</a>
             <button type="submit" class="btn btn-primary">Perbarui Menu</button>
@@ -101,6 +120,53 @@
 
 @section('scripts')
 <script>
+    const availableBahans = @json($allBahans);
+    const existingBahans = @json($menu->bahans);
+    let bahanIndex = 0;
+
+    function addBahanRow(selectedId = '', qty = 1) {
+        const container = document.getElementById('bahanRowsContainer');
+        const row = document.createElement('div');
+        row.className = 'bahan-row';
+        row.id = 'bahanRow_' + bahanIndex;
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '2fr 1fr auto';
+        row.style.gap = '10px';
+        row.style.alignItems = 'center';
+
+        let options = '<option value="">-- Pilih Bahan Mentah --</option>';
+        availableBahans.forEach(b => {
+            const selected = (b.id_bahan == selectedId) ? 'selected' : '';
+            options += `<option value="${b.id_bahan}" ${selected}>${b.nama_bahan} (Stok: ${b.stok})</option>`;
+        });
+
+        row.innerHTML = `
+            <div>
+                <select name="bahans[${bahanIndex}][id_bahan]" class="form-control" required>
+                    ${options}
+                </select>
+            </div>
+            <div>
+                <input type="number" name="bahans[${bahanIndex}][jumlah_dibutuhkan]" class="form-control" placeholder="Qty" min="1" value="${qty}" required>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeBahanRow('bahanRow_${bahanIndex}')" title="Hapus Baris">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `;
+
+        container.appendChild(row);
+        bahanIndex++;
+    }
+
+    function removeBahanRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.remove();
+        }
+    }
+
     function previewImage(input) {
         const wrapper = document.getElementById('imgPreviewWrapper');
         const img = document.getElementById('imgPreview');
@@ -115,6 +181,17 @@
             wrapper.style.display = 'none';
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (existingBahans && existingBahans.length > 0) {
+            existingBahans.forEach(b => {
+                const qty = b.pivot ? b.pivot.jumlah_dibutuhkan : 1;
+                addBahanRow(b.id_bahan, qty);
+            });
+        } else {
+            addBahanRow();
+        }
+    });
 </script>
 @endsection
 

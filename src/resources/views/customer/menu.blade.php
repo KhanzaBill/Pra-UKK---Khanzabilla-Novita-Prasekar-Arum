@@ -493,12 +493,13 @@
 
     <div class="menu-grid">
         @forelse($menus as $menu)
-            <a href="{{ $menu->status_stok === 'Tersedia' ? route('customer.detail_menu', $menu->id_menu) : '#' }}" 
-               class="menu-card {{ $menu->status_stok === 'Habis' ? 'disabled' : '' }}"
-               @if($menu->status_stok === 'Tersedia') onclick="showTapped(event, this)" @endif>
+            @php $tersedia = $menu->isTersedia(); @endphp
+            <a href="{{ $tersedia ? route('customer.detail_menu', $menu->id_menu) : '#' }}" 
+               class="menu-card {{ !$tersedia ? 'disabled' : '' }}"
+               @if($tersedia) onclick="showTapped(event, this)" @endif>
 
                 {{-- Habis / Favorit Badge --}}
-                @if($menu->status_stok === 'Habis')
+                @if(!$tersedia)
                     <span class="badge-habis">HABIS</span>
                 @elseif(Str::contains(strtolower($menu->nama_menu), ['geprek', 'spesial', 'komplit', 'paket']))
                     <span class="badge-favorit"><i class="fa-solid fa-fire"></i> Favorit</span>
@@ -506,7 +507,7 @@
 
                 {{-- Image --}}
                 <div class="menu-card-img">
-                    @if($menu->status_stok === 'Tersedia')
+                    @if($tersedia)
                         <div class="cart-overlay">
                             <i class="fa-solid fa-cart-plus"></i>
                             <span>Pilih Menu</span>

@@ -153,6 +153,7 @@
                 <tr>
                     <th>No.</th>
                     <th>Nama Tambahan</th>
+                    <th>Bahan Mentah Terkait</th>
                     <th>Harga Tambahan</th>
                     <th>Status Stok</th>
                     <th>Aksi</th>
@@ -160,9 +161,17 @@
             </thead>
             <tbody>
                 @forelse($tambahans as $t)
+                    @php $firstBahan = $t->bahans->first(); @endphp
                     <tr>
                         <td><strong style="color: var(--primary);">#{{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}</strong></td>
                         <td><strong style="font-size: 0.9rem;">{{ $t->nama_tambahan }}</strong></td>
+                        <td>
+                            @if($firstBahan)
+                                <span style="font-size: 0.88rem; color: var(--text-main); font-weight: 500;">Stok: {{ $firstBahan->stok }}</span>
+                            @else
+                                <span style="font-size: 0.85rem; color: var(--text-sub);">-</span>
+                            @endif
+                        </td>
                         <td><strong style="color: var(--success); font-size: 0.92rem;">+ Rp {{ number_format($t->harga, 0, ',', '.') }}</strong></td>
                         <td>
                             <form action="{{ route('admin.tambahans.toggle_stok', $t->id_tambahan) }}" method="POST" style="display: inline;">
@@ -180,10 +189,10 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <button type="button" class="btn btn-sm btn-secondary" onclick="editTambahanModal({{ $t->id_tambahan }}, '{{ $t->nama_tambahan }}', {{ $t->harga }}, '{{ $t->status_stok }}')">
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="editTambahanModal({{ $t->id_tambahan }}, '{{ addslashes($t->nama_tambahan) }}', {{ $t->harga }}, '{{ $t->status_stok }}', '{{ $firstBahan ? $firstBahan->id_bahan : '' }}')">
                                     <i class="fa-solid fa-pen-to-square"></i> Edit
                                 </button>
-                                <form action="{{ route('admin.tambahans.destroy', $t->id_tambahan) }}" method="POST" onsubmit="return confirm('Hapus item tambahan {{ $t->nama_tambahan }}?')">
+                                <form action="{{ route('admin.tambahans.destroy', $t->id_tambahan) }}" method="POST" onsubmit="return confirm('Hapus item tambahan {{ addslashes($t->nama_tambahan) }}?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger">
@@ -195,7 +204,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 36px 20px; color: var(--text-sub);">
+                        <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-sub);">
                             <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; color: #DDD; margin-bottom: 8px; display: block;"></i>
                             Belum ada menu tambahan
                         </td>
@@ -219,6 +228,16 @@
             <div class="form-group">
                 <label class="form-label" for="nama_tambahan">Nama Tambahan:</label>
                 <input type="text" name="nama_tambahan" id="nama_tambahan" class="form-control" placeholder="Contoh: Sambal Matah" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_bahan_tambahan">Bahan Mentah Terkait (Otomatisasi Stok):</label>
+                <select name="id_bahan" id="id_bahan_tambahan" class="form-control">
+                    <option value="">-- Pilih Bahan Mentah (Opsional) --</option>
+                    @foreach($allBahans as $ab)
+                        <option value="{{ $ab->id_bahan }}">{{ $ab->nama_bahan }} (Stok: {{ $ab->stok }})</option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="form-group">
@@ -251,16 +270,18 @@
         document.getElementById('tambahanForm').action = "{{ route('admin.tambahans.store') }}";
         document.getElementById('tambahanMethod').innerHTML = '';
         document.getElementById('nama_tambahan').value = '';
+        document.getElementById('id_bahan_tambahan').value = '';
         document.getElementById('harga_tambahan').value = '';
         document.getElementById('status_stok_tambahan').value = 'Tersedia';
         document.getElementById('tambahanModal').style.display = 'flex';
     }
 
-    function editTambahanModal(id, nama, harga, statusStok) {
+    function editTambahanModal(id, nama, harga, statusStok, idBahan = '') {
         document.getElementById('tambahanModalTitle').innerText = 'Edit Menu Tambahan';
         document.getElementById('tambahanForm').action = "/admin/tambahans/" + id;
         document.getElementById('tambahanMethod').innerHTML = '@method("PUT")';
         document.getElementById('nama_tambahan').value = nama;
+        document.getElementById('id_bahan_tambahan').value = idBahan || '';
         document.getElementById('harga_tambahan').value = harga;
         document.getElementById('status_stok_tambahan').value = statusStok || 'Tersedia';
         document.getElementById('tambahanModal').style.display = 'flex';
