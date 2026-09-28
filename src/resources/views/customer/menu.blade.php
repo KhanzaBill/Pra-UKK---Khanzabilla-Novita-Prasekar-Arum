@@ -425,44 +425,44 @@
 @endsection
 
 @section('content')
-{{-- ===== Custom Header ===== --}}
+{{-- ===== Header Kustom Halaman Daftar Menu ===== --}}
 <div class="menu-header">
     <div class="menu-header-top">
-        {{-- Small Logo --}}
+        {{-- Logo Kecil Aplikasi di Header Menu --}}
         <div class="menu-logo-small">
             @if(file_exists(public_path('images/logo.png')))
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy"> {{-- Gambar logo restoran jika file tersedia --}}
             @else
-                <span>YUMMY<br>CHICKEN</span>
+                <span>YUMMY<br>CHICKEN</span> {{-- Teks logo fallback jika gambar tidak ada --}}
             @endif
         </div>
 
-        {{-- Cart Icon --}}
+        {{-- Ikon Keranjang Belanja dengan Badge Jumlah Item --}}
         <a href="{{ route('customer.cart') }}" class="cart-btn">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span class="cart-count">{{ $cartCount }}</span>
+            <i class="fa-solid fa-cart-shopping"></i> {{-- Ikon troli keranjang --}}
+            <span class="cart-count">{{ $cartCount }}</span> {{-- Jumlah item unik di keranjang dari session --}}
         </a>
     </div>
 
-    {{-- Search Bar --}}
+    {{-- Form Pencarian Nama Menu --}}
     <div class="search-wrapper">
         <form action="{{ route('customer.menu') }}" method="GET" class="search-form">
             @if($kategoriActive && $kategoriActive !== 'Semua')
-                <input type="hidden" name="kategori" value="{{ $kategoriActive }}">
+                <input type="hidden" name="kategori" value="{{ $kategoriActive }}"> {{-- Pertahankan kategori aktif saat pencarian --}}
             @endif
             <div class="search-input-box">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" name="search" class="search-input" placeholder="Cari nama menu favoritmu..." value="{{ $search }}">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i> {{-- Ikon kaca pembesar --}}
+                <input type="text" name="search" class="search-input" placeholder="Cari nama menu favoritmu..." value="{{ $search }}"> {{-- Input keyword pencarian --}}
                 @if($search)
                     <a href="{{ route('customer.menu', $kategoriActive && $kategoriActive !== 'Semua' ? ['kategori' => $kategoriActive] : []) }}" class="search-clear-btn" title="Hapus pencarian">
-                        <i class="fa-solid fa-xmark"></i>
+                        <i class="fa-solid fa-xmark"></i> {{-- Tombol reset pencarian --}}
                     </a>
                 @endif
             </div>
         </form>
     </div>
 
-    {{-- Category Tabs --}}
+    {{-- Tab Filter Kategori Menu (Semua, Paket, Makanan, Minuman) --}}
     <div class="category-tabs">
         <a href="{{ route('customer.menu', array_filter(['kategori' => 'Semua', 'search' => $search])) }}" 
            class="tab-item {{ $kategoriActive === 'Semua' ? 'active' : '' }}">
@@ -483,29 +483,29 @@
     </div>
 </div>
 
-{{-- ===== Menu Body ===== --}}
+{{-- ===== Area Grid Daftar Kartu Menu ===== --}}
 <div class="menu-body">
     @if(session('success'))
         <div class="toast-success" id="flashToast">
-            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+            <i class="fa-solid fa-circle-check"></i> {{ session('success') }} {{-- Toast notifikasi sukses --}}
         </div>
     @endif
 
     <div class="menu-grid">
         @forelse($menus as $menu)
-            @php $tersedia = $menu->isTersedia(); @endphp
+            @php $tersedia = $menu->isTersedia(); @endphp {{-- Cek ketersediaan menu berdasarkan stok bahan dan toggle admin --}}
             <a href="{{ $tersedia ? route('customer.detail_menu', $menu->id_menu) : '#' }}" 
                class="menu-card {{ !$tersedia ? 'disabled' : '' }}"
-               @if($tersedia) onclick="showTapped(event, this)" @endif>
+               @if($tersedia) onclick="showTapped(event, this)" @endif> {{-- Klik untuk membuka detail menu --}}
 
-                {{-- Habis / Favorit Badge --}}
+                {{-- Badge Status Habis atau Favorit --}}
                 @if(!$tersedia)
-                    <span class="badge-habis">HABIS</span>
+                    <span class="badge-habis">HABIS</span> {{-- Badge jika stok bahan habis / di-set habis oleh admin --}}
                 @elseif(Str::contains(strtolower($menu->nama_menu), ['geprek', 'spesial', 'komplit', 'paket']))
-                    <span class="badge-favorit"><i class="fa-solid fa-fire"></i> Favorit</span>
+                    <span class="badge-favorit"><i class="fa-solid fa-fire"></i> Favorit</span> {{-- Badge favorit untuk menu populer --}}
                 @endif
 
-                {{-- Image --}}
+                {{-- Foto Gambar Menu --}}
                 <div class="menu-card-img">
                     @if($tersedia)
                         <div class="cart-overlay">
@@ -515,19 +515,20 @@
                     @endif
 
                     @if($menu->foto)
-                        <img src="{{ asset('storage/' . $menu->foto) }}" alt="{{ $menu->nama_menu }}" loading="lazy">
+                        <img src="{{ asset('storage/' . $menu->foto) }}" alt="{{ $menu->nama_menu }}" loading="lazy"> {{-- Tampilkan foto menu dari storage --}}
                     @else
-                        <i class="fa-solid fa-utensils img-placeholder"></i>
+                        <i class="fa-solid fa-utensils img-placeholder"></i> {{-- Placeholder ikon jika foto tidak ada --}}
                     @endif
                 </div>
 
-                {{-- Info --}}
+                {{-- Informasi Nama & Harga Menu --}}
                 <div class="menu-card-info">
-                    <h4 class="menu-card-name">{{ $menu->nama_menu }}</h4>
-                    <div class="menu-card-price">Rp {{ number_format($menu->harga, 0, ',', '.') }}</div>
+                    <h4 class="menu-card-name">{{ $menu->nama_menu }}</h4> {{-- Nama menu --}}
+                    <div class="menu-card-price">Rp {{ number_format($menu->harga, 0, ',', '.') }}</div> {{-- Format rupiah harga menu --}}
                 </div>
             </a>
         @empty
+            {{-- Tampilan Kosong jika menu tidak ditemukan --}}
             <div class="empty-state">
                 <i class="fa-solid fa-utensils"></i>
                 <h3>Menu Tidak Ditemukan</h3>
@@ -543,22 +544,24 @@
 
 @section('scripts')
 <script>
+    // Fungsi animasi saat kartu menu diklik oleh pengguna
     function showTapped(event, card) {
-        event.preventDefault();
-        card.classList.add('tapped');
+        event.preventDefault(); // Cegah navigasi langsung
+        card.classList.add('tapped'); // Tambah efek animasi tekan
         const href = card.getAttribute('href');
         setTimeout(() => {
             card.classList.remove('tapped');
             if (href && href !== '#') {
-                window.location.href = href;
+                window.location.href = href; // Pindah ke halaman detail menu setelah animasi selesai
             }
         }, 300);
     }
 
+    // Menghapus toast notifikasi sukses secara otomatis setelah beberapa detik
     document.addEventListener('DOMContentLoaded', function () {
         const toast = document.getElementById('flashToast');
         if (toast) {
-            setTimeout(() => toast.remove(), 2800);
+            setTimeout(() => toast.remove(), 2800); // Hapus elemen toast setelah 2.8 detik
         }
     });
 </script>

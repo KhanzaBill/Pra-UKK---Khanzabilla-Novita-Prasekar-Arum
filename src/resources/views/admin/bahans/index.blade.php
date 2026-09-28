@@ -235,28 +235,33 @@
 
 @section('scripts')
 <script>
+    // Membuka modal form tambah bahan mentah baru
     function openTambahBahanModal() {
-        document.getElementById('modalTambahBahan').style.display = 'flex';
+        document.getElementById('modalTambahBahan').style.display = 'flex'; // Tampilkan modal tambah bahan
     }
 
+    // Membuka modal form edit bahan mentah
     function openEditBahanModal(id, nama, stok) {
-        document.getElementById('nama_bahan_edit').value = nama;
-        document.getElementById('stok_edit').value = stok;
-        document.getElementById('formEditBahan').action = "{{ url('admin/bahans') }}/" + id;
-        document.getElementById('modalEditBahan').style.display = 'flex';
+        document.getElementById('nama_bahan_edit').value = nama; // Set nilai input nama bahan
+        document.getElementById('stok_edit').value = stok; // Set nilai input jumlah stok
+        document.getElementById('formEditBahan').action = "{{ url('admin/bahans') }}/" + id; // Set action URL ke update ID
+        document.getElementById('modalEditBahan').style.display = 'flex'; // Tampilkan modal edit bahan
     }
 
+    // Menutup modal berdasarkan ID modal
     function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
+        document.getElementById(modalId).style.display = 'none'; // Sembunyikan modal
     }
 
+    // Menutup modal otomatis jika area di luar modal diklik (backdrop overlay)
     window.onclick = function(event) {
         ['modalTambahBahan', 'modalEditBahan'].forEach(id => {
             const modal = document.getElementById(id);
             if (event.target === modal) {
-                modal.style.display = 'none';
+                modal.style.display = 'none'; // Sembunyikan modal jika backdrop diklik
             }
         });
     }
 </script>
 @endsection
+

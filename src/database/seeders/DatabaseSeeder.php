@@ -1,34 +1,41 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders; // Mendefinisikan namespace seeder di Database\Seeders
 
-use Illuminate\Database\Seeder;
-use App\Models\Meja;
-use App\Models\Admin;
-use App\Models\Menu;
-use App\Models\Tambahan;
-use App\Models\Bahan;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Seeder; // Import class Seeder sebagai parent class
+use App\Models\Meja;             // Import model Meja untuk seed data meja
+use App\Models\Admin;            // Import model Admin untuk seed akun kasir default
+use App\Models\Menu;             // Import model Menu untuk seed data menu
+use App\Models\Tambahan;         // Import model Tambahan untuk seed data menu tambahan
+use App\Models\Bahan;            // Import model Bahan untuk seed data bahan baku
+use Illuminate\Support\Facades\Hash; // Import facade Hash untuk enkripsi password admin
 
+// Seeder utama database: mengisi semua tabel dengan data awal
+// Jalankan dengan: php artisan db:seed atau php artisan migrate:fresh --seed
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Menjalankan seluruh proses seeding database.
+     * Urutan: Meja → Admin → Bahan → Menu Paket → Menu Makanan → Menu Minuman → Tambahan → Sample Pesanan.
+     */
     public function run(): void
     {
-        // 1. Seed Meja
-        for ($i = 1; $i <= 10; $i++) {
+        // 1. Seed Meja: buat 10 meja restoran dengan nomor format "Meja 01" sampai "Meja 10"
+        for ($i = 1; $i <= 10; $i++) {                           // Loop dari 1 sampai 10 untuk membuat 10 meja
             Meja::create([
-                'nomor_meja' => 'Meja ' . str_pad($i, 2, '0', STR_PAD_LEFT)
+                'nomor_meja' => 'Meja ' . str_pad($i, 2, '0', STR_PAD_LEFT) // Format nomor meja: "Meja 01", "Meja 02", dst (padding 2 digit)
             ]);
         }
 
-        // 2. Seed Admin Default
+        // 2. Seed Admin Default: buat satu akun kasir bawaan untuk pertama kali login
         Admin::create([
-            'nama' => 'Kasir Yummy Chicken',
-            'username' => 'admin',
-            'password' => Hash::make('yummychickenCC')
+            'nama'     => 'Kasir Yummy Chicken',         // Nama kasir default
+            'username' => 'admin',                        // Username untuk login: 'admin'
+            'password' => Hash::make('yummychickenCC')   // Password di-hash bcrypt: 'yummychickenCC'
         ]);
 
-        // 3. Seed Master Bahan
+        // 3. Seed Master Bahan: daftar semua bahan baku beserta stok awalnya
+        // Format: 'Nama Bahan' => jumlah_stok_awal
         $bahansList = [
             'Ayam Sayap' => 30,
             'Ayam Paha Bawah' => 30,
@@ -85,11 +92,11 @@ class DatabaseSeeder extends Seeder
             'Air Mineral 600ml' => 50,
         ];
 
-        $bahans = [];
-        foreach ($bahansList as $nama => $stok) {
-            $bahans[$nama] = Bahan::create([
-                'nama_bahan' => $nama,
-                'stok' => $stok,
+        $bahans = []; // Array untuk menyimpan objek Bahan yang berhasil dibuat (diindeks per nama bahan)
+        foreach ($bahansList as $nama => $stok) { // Iterasi setiap bahan dalam daftar
+            $bahans[$nama] = Bahan::create([       // Buat bahan di database dan simpan objeknya ke array
+                'nama_bahan' => $nama,             // Nama bahan dari key array
+                'stok'       => $stok,             // Stok awal dari value array
             ]);
         }
 
@@ -693,73 +700,80 @@ class DatabaseSeeder extends Seeder
             ]
         ];
 
+        // Iterasi setiap data pesanan sample untuk disimpan ke database
         foreach ($dummyOrders as $orderData) {
-            $totalHarga = 0;
-            $orderItemsCalculated = [];
+            $totalHarga           = 0;  // Akumulasi total harga pesanan (dihitung ulang dari item)
+            $orderItemsCalculated = []; // Array item pesanan yang sudah dikalkulasi subtotalnya
 
+            // Iterasi setiap item dalam data pesanan untuk kalkulasi subtotal dan total harga
             foreach ($orderData['items'] as $item) {
-                $menuModel = $allMenus->get($item['menu']);
-                if (!$menuModel) continue;
+                $menuModel = $allMenus->get($item['menu']); // Ambil objek Menu dari koleksi berdasarkan nama
+                if (!$menuModel) continue;                  // Lewati jika menu tidak ditemukan (data tidak valid)
 
-                $tambahanModels = [];
-                $tambahanTotal = 0;
+                $tambahanModels = []; // Array objek Tambahan yang dipilih untuk item ini
+                $tambahanTotal  = 0; // Akumulasi harga semua tambahan yang dipilih
+
                 if (!empty($item['tambahans'])) {
-                    foreach ($item['tambahans'] as $tName) {
-                        $tModel = $allTambahans->get($tName);
+                    foreach ($item['tambahans'] as $tName) {  // Iterasi setiap nama tambahan yang dipilih
+                        $tModel = $allTambahans->get($tName); // Ambil objek Tambahan dari koleksi
                         if ($tModel) {
-                            $tambahanModels[] = $tModel;
-                            $tambahanTotal += $tModel->harga;
+                            $tambahanModels[] = $tModel;      // Tambahkan ke array tambahan item ini
+                            $tambahanTotal   += $tModel->harga; // Akumulasikan harga tambahan
                         }
                     }
                 }
 
-                $subtotal = ($menuModel->harga + $tambahanTotal) * $item['jumlah'];
-                $totalHarga += $subtotal;
+                $subtotal    = ($menuModel->harga + $tambahanTotal) * $item['jumlah']; // Hitung subtotal: (harga menu + tambahan) × jumlah
+                $totalHarga += $subtotal; // Akumulasikan ke total harga pesanan
 
+                // Simpan data item yang sudah dikalkulasi untuk diproses setelah total harga diketahui
                 $orderItemsCalculated[] = [
-                    'menu_id' => $menuModel->id_menu,
-                    'jumlah' => $item['jumlah'],
-                    'level_pedas' => $item['level_pedas'],
-                    'catatan' => $item['catatan'],
-                    'subtotal' => $subtotal,
-                    'tambahans' => $tambahanModels,
+                    'menu_id'    => $menuModel->id_menu, // ID menu
+                    'jumlah'     => $item['jumlah'],     // Jumlah porsi
+                    'level_pedas'=> $item['level_pedas'], // Level pedas (null jika tidak ada)
+                    'catatan'    => $item['catatan'],     // Catatan item
+                    'subtotal'   => $subtotal,            // Subtotal yang sudah dihitung
+                    'tambahans'  => $tambahanModels,      // Array objek tambahan yang dipilih
                 ];
             }
 
+            // Simpan data pesanan ke tabel pesanans
             $pesanan = \App\Models\Pesanan::create([
-                'id_meja' => $orderData['id_meja'],
-                'id_admin' => $admin ? $admin->id_admin : null,
-                'tipe_pesanan' => $orderData['tipe_pesanan'],
-                'nama_pemesan' => $orderData['nama_pemesan'],
-                'status' => $orderData['status'],
-                'status_pembayaran' => $orderData['status_pembayaran'],
-                'metode_bayar' => $orderData['metode_bayar'],
-                'uang_dibayar' => $orderData['uang_dibayar'] ?? ($orderData['status_pembayaran'] === 'Lunas' ? $totalHarga : null),
-                'kembalian' => $orderData['kembalian'] ?? 0,
-                'alasan_pembatalan' => $orderData['alasan_pembatalan'] ?? null,
-                'tanggal_waktu' => $orderData['tanggal_waktu'],
-                'total_harga' => $totalHarga,
+                'id_meja'           => $orderData['id_meja'],         // ID meja (null untuk Take Away)
+                'id_admin'          => $admin ? $admin->id_admin : null, // ID admin (null jika belum ada admin)
+                'tipe_pesanan'      => $orderData['tipe_pesanan'],    // Dine-In atau Take Away
+                'nama_pemesan'      => $orderData['nama_pemesan'],    // Nama pelanggan
+                'status'            => $orderData['status'],          // Status pesanan awal
+                'status_pembayaran' => $orderData['status_pembayaran'], // Status pembayaran
+                'metode_bayar'      => $orderData['metode_bayar'],    // Metode pembayaran
+                'uang_dibayar'      => $orderData['uang_dibayar'] ?? ($orderData['status_pembayaran'] === 'Lunas' ? $totalHarga : null), // Uang dibayar (default total jika Lunas)
+                'kembalian'         => $orderData['kembalian'] ?? 0,  // Kembalian (default 0)
+                'alasan_pembatalan' => $orderData['alasan_pembatalan'] ?? null, // Alasan batal jika ada
+                'tanggal_waktu'     => $orderData['tanggal_waktu'],   // Waktu pesanan
+                'total_harga'       => $totalHarga,                   // Total harga yang sudah dikalkulasi
             ]);
 
+            // Simpan setiap item pesanan ke tabel detail_pesanans
             foreach ($orderItemsCalculated as $calcItem) {
                 $detail = \App\Models\DetailPesanan::create([
-                    'id_pesanan' => $pesanan->id_pesanan,
-                    'id_menu' => $calcItem['menu_id'],
-                    'jumlah' => $calcItem['jumlah'],
-                    'level_pedas' => $calcItem['level_pedas'],
-                    'catatan' => $calcItem['catatan'],
-                    'subtotal' => $calcItem['subtotal'],
+                    'id_pesanan'  => $pesanan->id_pesanan,  // FK ke pesanan induk
+                    'id_menu'     => $calcItem['menu_id'],  // FK ke menu yang dipesan
+                    'jumlah'      => $calcItem['jumlah'],   // Jumlah porsi
+                    'level_pedas' => $calcItem['level_pedas'], // Level pedas
+                    'catatan'     => $calcItem['catatan'],  // Catatan item
+                    'subtotal'    => $calcItem['subtotal'], // Subtotal item
                 ]);
 
-                foreach ($calcItem['tambahans'] as $tModel) {
+                // Simpan tambahan yang dipilih ke tabel pivot detail_tambahans
+                foreach ($calcItem['tambahans'] as $tModel) { // Iterasi setiap objek tambahan
                     \Illuminate\Support\Facades\DB::table('detail_tambahans')->insert([
-                        'id_detail' => $detail->id_detail,
-                        'id_tambahan' => $tModel->id_tambahan,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'id_detail'   => $detail->id_detail,    // FK ke detail pesanan yang baru dibuat
+                        'id_tambahan' => $tModel->id_tambahan, // FK ke tambahan yang dipilih
+                        'created_at'  => now(),                // Waktu insert
+                        'updated_at'  => now(),                // Waktu update
                     ]);
                 }
             }
-        }
-    }
-}
+        } // Akhir loop setiap data pesanan sample
+    } // Akhir method run()
+} // Akhir class DatabaseSeeder

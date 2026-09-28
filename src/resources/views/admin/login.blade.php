@@ -133,57 +133,68 @@
 </head>
 <body>
 
+{{-- Card Utama Form Login Admin --}}
 <div class="login-card">
+    {{-- Header Brand & Logo Admin --}}
     <div class="brand-header">
         <div class="brand-logo-circle">
             @if(file_exists(public_path('images/logo.png')))
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy"> {{-- Logo restoran --}}
             @else
-                <span>YUMMY<br>CHICKEN</span>
+                <span>YUMMY<br>CHICKEN</span> {{-- Teks logo fallback --}}
             @endif
         </div>
         <h2 class="brand-title">LOGIN ADMIN</h2>
         <p class="brand-subtitle">Hanya untuk Karyawan Yummy Chicken</p>
     </div>
 
+    {{-- Alert Pesan Error Login --}}
     @if($errors->has('login') || session('error'))
         <div class="alert-error">
-            <i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first('login') ?? session('error') }}
+            <i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first('login') ?? session('error') }} {{-- Pesan error login --}}
         </div>
     @endif
 
+    {{-- Form Autentikasi Login Admin --}}
     <form action="{{ route('admin.login.submit') }}" method="POST" id="loginForm">
-        @csrf
+        @csrf {{-- Token keamanan CSRF Laravel --}}
+
+        {{-- Input Role (Readonly: admin) --}}
         <div class="form-group">
             <label class="form-label" for="role"><i class="fa-solid fa-user-shield" style="color: #D32F2F;"></i> Role</label>
-            <input type="text" name="username" id="role" class="form-control" value="admin" readonly style="background: #F5F5F5; cursor: not-allowed;" required>
+            <input type="text" name="username" id="role" class="form-control" value="admin" readonly style="background: #F5F5F5; cursor: not-allowed;" required> {{-- Field username otomatis 'admin' --}}
         </div>
 
+        {{-- Input Nama Kasir Jaga --}}
         <div class="form-group">
             <label class="form-label" for="nama_kasir"><i class="fa-solid fa-id-card" style="color: #D32F2F;"></i> Nama Kasir</label>
-            <input type="text" name="nama_kasir" id="nama_kasir" class="form-control" placeholder="Masukkan nama kasir" value="{{ old('nama_kasir') }}" required>
+            <input type="text" name="nama_kasir" id="nama_kasir" class="form-control" placeholder="Masukkan nama kasir" value="{{ old('nama_kasir') }}" required> {{-- Input nama kasir aktif --}}
         </div>
 
+        {{-- Input Password Login --}}
         <div class="form-group">
             <label class="form-label" for="password"><i class="fa-solid fa-lock" style="color: #D32F2F;"></i> Password</label>
-            <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" value="yummychickenCC" required>
+            <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" required> {{-- Input password admin --}}
         </div>
 
+        {{-- Tombol Submit Form Login --}}
         <button type="submit" id="btnLoginSubmit" class="btn-submit">
             <p>Masuk</p>
         </button>
     </form>
 
 <script>
+    // Event listener submit form login untuk mencegah double click & menampilkan spinner
     document.getElementById('loginForm').addEventListener('submit', function() {
         const btn = document.getElementById('btnLoginSubmit');
         if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+            btn.disabled = true; // Nonaktifkan tombol saat proses login dikirim
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; // Tampilkan ikon loading
         }
     });
 </script>
 
 </body>
 </html>
+
 

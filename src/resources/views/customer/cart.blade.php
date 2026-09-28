@@ -377,51 +377,59 @@
             </a>
         </div>
     @else
-        <p class="cart-count-label">{{ count($cart) }} jenis menu di keranjang</p>
+        <p class="cart-count-label">{{ count($cart) }} jenis menu di keranjang</p> {{-- Jumlah jenis menu di keranjang --}}
 
+        {{-- Loop Iterasi Item Keranjang Belanja --}}
         @foreach($cart as $hash => $item)
             <div class="cart-item">
+                {{-- Tombol Aksi Edit & Hapus Item --}}
                 <div class="cart-item-actions">
                     <a href="{{ route('customer.detail_menu', $item['id_menu']) }}?edit_hash={{ $hash }}" class="cart-item-edit" title="Edit Opsi Menu">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                        <i class="fa-solid fa-pen-to-square"></i> Edit {{-- Edit opsi menu --}}
                     </a>
                     <a href="{{ route('customer.remove_cart', $hash) }}" class="cart-item-trash" title="Hapus menu" onclick="return confirm('Hapus menu ini dari keranjang?')">
-                        <i class="fa-solid fa-trash-can"></i>
+                        <i class="fa-solid fa-trash-can"></i> {{-- Hapus item --}}
                     </a>
                 </div>
 
+                {{-- Gambar Foto Menu --}}
                 <div class="cart-item-img">
                     @if(!empty($item['foto']))
-                        <img src="{{ asset('storage/' . $item['foto']) }}" alt="{{ $item['nama_menu'] }}" loading="lazy">
+                        <img src="{{ asset('storage/' . $item['foto']) }}" alt="{{ $item['nama_menu'] }}" loading="lazy"> {{-- Foto menu --}}
                     @else
                         <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#CCC; font-size:1.8rem;">
-                            <i class="fa-solid fa-utensils"></i>
+                            <i class="fa-solid fa-utensils"></i> {{-- Placeholder ikon jika tanpa foto --}}
                         </div>
                     @endif
                 </div>
 
+                {{-- Info Detail Item --}}
                 <div class="cart-item-body">
-                    <div class="cart-item-name">{{ $item['nama_menu'] }}</div>
+                    <div class="cart-item-name">{{ $item['nama_menu'] }}</div> {{-- Nama menu --}}
 
+                    {{-- Level Pedas & Tambahan --}}
                     @if(!empty($item['level_pedas']) || !empty($item['tambahans']))
                         <div class="cart-item-variant">
                             @if(!empty($item['level_pedas']))
-                                Level {{ $item['level_pedas'] }}
+                                Level {{ $item['level_pedas'] }} {{-- Level pedas --}}
                             @endif
                             @if(!empty($item['tambahans']))
-                                {{ !empty($item['level_pedas']) ? '+ ' : '' }}{{ implode(', ', array_map(fn($t) => $t['nama_tambahan'], $item['tambahans'])) }}
+                                {{ !empty($item['level_pedas']) ? '+ ' : '' }}{{ implode(', ', array_map(fn($t) => $t['nama_tambahan'], $item['tambahans'])) }} {{-- Tambahan --}}
                             @endif
                         </div>
                     @endif
 
+                    {{-- Catatan Item --}}
                     @if(!empty($item['catatan']))
-                        <div class="cart-item-note">"{{ $item['catatan'] }}"</div>
+                        <div class="cart-item-note">"{{ $item['catatan'] }}"</div> {{-- Catatan --}}
                     @endif
 
                     <div class="cart-item-footer">
-                        <span class="cart-item-price">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</span>
+                        <span class="cart-item-price">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</span> {{-- Subtotal item --}}
 
+                        {{-- Stepper Kuantitas Porsi --}}
                         <div class="mini-stepper">
+                            {{-- Form Kurangi Jumlah --}}
                             <form action="{{ route('customer.update_cart') }}" method="POST" style="margin: 0; display: flex; align-items: center;">
                                 @csrf
                                 <input type="hidden" name="item_hash" value="{{ $hash }}">
@@ -429,8 +437,9 @@
                                 <button type="submit" class="mini-btn"><i class="fa-solid fa-minus"></i></button>
                             </form>
 
-                            <span class="mini-qty">{{ $item['jumlah'] }}</span>
+                            <span class="mini-qty">{{ $item['jumlah'] }}</span> {{-- Angka jumlah porsi --}}
 
+                            {{-- Form Tambah Jumlah --}}
                             <form action="{{ route('customer.update_cart') }}" method="POST" style="margin: 0; display: flex; align-items: center;">
                                 @csrf
                                 <input type="hidden" name="item_hash" value="{{ $hash }}">
@@ -445,17 +454,19 @@
     @endif
 </div>
 
+{{-- ===== Ringkasan Tagihan & Tombol Checkout ===== --}}
 @if(!empty($cart))
     <div class="cart-summary">
         <div class="summary-row subtotal">
             <span>Subtotal Menu</span>
-            <span class="summary-value">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>
+            <span class="summary-value">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span> {{-- Subtotal harga --}}
         </div>
         <div class="summary-row total">
             <span>Total Tagihan</span>
-            <span class="summary-value">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>
+            <span class="summary-value">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span> {{-- Total tagihan --}}
         </div>
 
+        {{-- Tombol Lanjut ke Checkout --}}
         <a href="{{ route('customer.checkout') }}" class="btn-checkout">
             Lanjut ke Checkout
         </a>

@@ -47,13 +47,10 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label" for="foto">Foto Menu (Biarkan kosong jika tidak diubah)</label>
+            <label class="form-label" for="foto">Foto Menu</label>
             @if($menu->foto)
                 <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 12px;">
                     <img src="{{ asset('storage/' . $menu->foto) }}" alt="{{ $menu->nama_menu }}" loading="lazy" style="width: 70px; height: 70px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border);">
-                    <label style="font-size: 0.82rem; color: var(--danger); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                        <input type="checkbox" name="hapus_foto" value="1"> Hapus foto saat ini
-                    </label>
                 </div>
             @endif
             <input type="file" name="foto" id="foto" class="form-control @error('foto') is-invalid @enderror" accept="image/jpeg,image/png,image/jpg,image/webp" onchange="previewImage(this)">
@@ -96,9 +93,9 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px;">
-                        <i class="fa-solid fa-cubes-stacked" style="color: var(--primary);"></i> Resep Bahan yang Dibutuhkan (Otomatisasi Stok)
+                        Resep Bahan yang Dibutuhkan
                     </h3>
-                    <p style="font-size: 0.78rem; color: var(--text-sub);">Tentukan bahan mentah yang akan otomatis dipotong saat menu ini dipesan.</p>
+                    <p style="font-size: 0.78rem; color: var(--text-sub);">Tentukan bahan mentah saat menu ini dipesan.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-accent" onclick="addBahanRow()">
                     <i class="fa-solid fa-plus"></i> Tambah Bahan
@@ -160,38 +157,42 @@
         bahanIndex++;
     }
 
+    // Menghapus baris dinamis pilihan bahan baku mentah
     function removeBahanRow(rowId) {
         const row = document.getElementById(rowId);
         if (row) {
-            row.remove();
+            row.remove(); // Hapus elemen baris dari DOM
         }
     }
 
+    // Memproses preview foto menu baru yang diunggah
     function previewImage(input) {
         const wrapper = document.getElementById('imgPreviewWrapper');
         const img = document.getElementById('imgPreview');
         if (input.files && input.files[0]) {
-            const reader = new FileReader();
+            const reader = new FileReader(); // Inisialisasi FileReader
             reader.onload = function(e) {
-                img.src = e.target.result;
-                wrapper.style.display = 'block';
+                img.src = e.target.result; // Set URL preview gambar baru
+                wrapper.style.display = 'block'; // Tampilkan elemen preview
             }
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(input.files[0]); // Baca file gambar
         } else {
-            wrapper.style.display = 'none';
+            wrapper.style.display = 'none'; // Sembunyikan elemen preview jika file dibatalkan
         }
     }
 
+    // Otomatis isi baris bahan baku sesuai data relasi yang sudah tersimpan di database saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
         if (existingBahans && existingBahans.length > 0) {
             existingBahans.forEach(b => {
-                const qty = b.pivot ? b.pivot.jumlah_dibutuhkan : 1;
-                addBahanRow(b.id_bahan, qty);
+                const qty = b.pivot ? b.pivot.jumlah_dibutuhkan : 1; // Ambil jumlah_dibutuhkan dari tabel pivot
+                addBahanRow(b.id_bahan, qty); // Tambahkan baris bahan yang sudah ada
             });
         } else {
-            addBahanRow();
+            addBahanRow(); // Jika belum ada relasi bahan, tambahkan 1 baris kosong
         }
     });
 </script>
 @endsection
+
 

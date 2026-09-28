@@ -747,55 +747,60 @@
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
+    <!-- Sidebar Menu Navigasi Admin -->
     <aside class="sidebar" id="adminSidebar">
+        {{-- Brand & Logo Sidebar --}}
         <div class="sidebar-brand">
             <div class="sidebar-logo-circle">
                 @if(file_exists(public_path('images/logo.png')))
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo"> {{-- Logo restoran jika file tersedia --}}
                 @else
-                    <span>YUMMY<br>CHICKEN</span>
+                    <span>YUMMY<br>CHICKEN</span> {{-- Teks logo fallback jika gambar tidak ada --}}
                 @endif
             </div>
             <h2>YUMMY CHICKEN</h2>
             <p>Cita Rasa Ayam Geprek Semarang</p>
         </div>
+
+        {{-- Daftar Menu Navigasi Admin --}}
         <ul class="sidebar-menu">
             <li>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-list-check"></i> Pesanan
+                    <i class="fa-solid fa-list-check"></i> Pesanan {{-- Rute dashboard pesanan masuk --}}
                 </a>
             </li>
             <li>
                 <a href="{{ route('admin.menus.index') }}" class="{{ request()->routeIs('admin.menus*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-utensils"></i> Kelola Menu
+                    <i class="fa-solid fa-utensils"></i> Kelola Menu {{-- Rute kelola menu & tambahan --}}
                 </a>
             </li>
             <li>
                 <a href="{{ route('admin.bahans.index') }}" class="{{ request()->routeIs('admin.bahans*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-cubes-stacked"></i> Kelola Stok
+                    <i class="fa-solid fa-cubes-stacked"></i> Kelola Stok {{-- Rute kelola bahan baku --}}
                 </a>
             </li>
             <li>
                 <a href="{{ route('admin.reports') }}" class="{{ request()->routeIs('admin.reports*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-chart-line"></i> Laporan Penjualan
+                    <i class="fa-solid fa-chart-line"></i> Laporan Penjualan {{-- Rute laporan rekap penjualan --}}
                 </a>
             </li>
             <li>
                 <a href="{{ route('admin.qrcodes') }}" class="{{ request()->routeIs('admin.qrcodes*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-qrcode"></i> Generator QR Code
+                    <i class="fa-solid fa-qrcode"></i> Generator QR Code {{-- Rute tampilan QR Code meja --}}
                 </a>
             </li>
         </ul>
         <div class="sidebar-footer">
-            &copy; {{ date('Y') }} Yummy Chicken Semarang
+            &copy; {{ date('Y') }} Yummy Chicken Semarang {{-- Tahun hak cipta --}}
         </div>
     </aside>
 
-    <!-- Main Wrapper -->
+    <!-- Main Wrapper Konten Dashboard Admin -->
     <div class="main-wrapper">
-        <!-- Topbar -->
+        <!-- Topbar Atas Dashboard Admin -->
         <header class="topbar">
             <div class="topbar-left">
+                {{-- Tombol Toggle Sidebar Mobile --}}
                 <button type="button" class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle Navigation">
                     <i class="fa-solid fa-bars"></i>
                 </button>
@@ -803,16 +808,18 @@
                     Manajemen Kasir Yummy Chicken
                 </div>
             </div>
+            {{-- Informasi Admin / Kasir Aktif & Tombol Logout --}}
             <div class="user-info">
                 <div class="user-avatar">
-                    {{ strtoupper(substr(session('admin_nama', 'A'), 0, 1)) }}
+                    {{ strtoupper(substr(session('admin_nama', 'A'), 0, 1)) }} {{-- Inisial huruf pertama nama kasir --}}
                 </div>
                 <div>
-                    <span class="user-name">{{ session('admin_nama', 'Kasir') }}</span>
+                    <span class="user-name">{{ session('admin_nama', 'Kasir') }}</span> {{-- Nama kasir aktif dari session --}}
                     <span class="user-role"> Admin</span>
                 </div>
+                {{-- Form Logout Admin --}}
                 <form action="{{ route('admin.logout') }}" method="POST" style="margin-left: 10px;">
-                    @csrf
+                    @csrf {{-- Token keamanan CSRF --}}
                     <button type="submit" class="btn-logout">
                       Logout
                     </button>
@@ -820,25 +827,28 @@
             </div>
         </header>
 
-        <!-- Container -->
+        <!-- Area Wadah Utama Konten Dashboard Admin -->
         <main class="container">
+            {{-- Alert Banner Sukses --}}
             @if(session('success'))
                 <div class="alert-banner alert-banner-success">
-                    <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+                    <i class="fa-solid fa-circle-check"></i> {{ session('success') }} {{-- Pesan sukses --}}
                 </div>
             @endif
 
+            {{-- Alert Banner Error --}}
             @if(session('error'))
                 <div class="alert-banner alert-banner-error">
-                    <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }}
+                    <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }} {{-- Pesan error --}}
                 </div>
             @endif
 
-            @yield('content')
+            @yield('content') {{-- Tempat menyisipkan konten view admin --}}
         </main>
     </div>
 
     <script>
+        // Fungsi toggle buka/tutup sidebar pada layar perangkat mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('adminSidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
@@ -852,11 +862,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('form').forEach(form => {
                 form.addEventListener('submit', function(e) {
-                    const btn = form.querySelector('button[type="submit"]');
+                    const btn = form.querySelector('button[type="submit"]'); // Cari tombol submit di form
                     if (btn && !btn.dataset.noSpinner) {
-                        btn.disabled = true;
-                        const originalHTML = btn.innerHTML;
-                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+                        btn.disabled = true; // Nonaktifkan tombol saat proses submit berjalan
+                        const originalHTML = btn.innerHTML; // Simpan HTML asli
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; // Ubah tombol ke tampilan spinner
                         setTimeout(() => {
                             btn.disabled = false;
                             btn.innerHTML = originalHTML;
@@ -867,7 +877,8 @@
         });
     </script>
 
-    @yield('scripts')
+    @yield('scripts') {{-- Section script tambahan khusus view admin anak --}}
 </body>
 </html>
+
 

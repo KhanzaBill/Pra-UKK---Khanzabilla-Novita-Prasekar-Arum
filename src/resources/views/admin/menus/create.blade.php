@@ -147,40 +147,66 @@
             <div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeBahanRow('bahanRow_${bahanIndex}')" title="Hapus Baris">
                     <i class="fa-solid fa-trash"></i>
+    // Menambah baris dinamis pilihan bahan baku mentah
+    function addBahanRow() {
+        const container = document.getElementById('bahanRowsContainer');
+        const rowId = 'bahan-row-' + bahanIndex;
+
+        const row = document.createElement('div');
+        row.className = 'bahan-row';
+        row.id = rowId;
+        row.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; background: #F9F9F9; padding: 10px; border-radius: 8px; border: 1px dashed #DDD;';
+
+        row.innerHTML = `
+            <div style="flex: 2; min-width: 180px;">
+                <select name="bahans[${bahanIndex}][id_bahan]" class="form-control" required>
+                    <option value="">-- Pilih Bahan Baku --</option>
+                    ${allBahansOptionsHTML}
+                </select>
+            </div>
+            <div style="flex: 1; min-width: 120px;">
+                <input type="number" name="bahans[${bahanIndex}][jumlah_dibutuhkan]" class="form-control" placeholder="Qty Dibutuhkan" value="1" min="1" required>
+            </div>
+            <div>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeBahanRow('${rowId}')" title="Hapus Bahan">
+                    <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
         `;
 
-        container.appendChild(row);
-        bahanIndex++;
+        container.appendChild(row); // Sisipkan baris baru ke kontainer
+        bahanIndex++; // Increment indeks baris bahan
     }
 
+    // Menghapus baris dinamis pilihan bahan baku
     function removeBahanRow(rowId) {
         const row = document.getElementById(rowId);
         if (row) {
-            row.remove();
+            row.remove(); // Hapus elemen baris dari DOM
         }
     }
 
+    // Memproses preview foto menu saat file gambar dipilih
     function previewImage(input) {
         const wrapper = document.getElementById('imgPreviewWrapper');
         const img = document.getElementById('imgPreview');
         if (input.files && input.files[0]) {
-            const reader = new FileReader();
+            const reader = new FileReader(); // Inisialisasi FileReader
             reader.onload = function(e) {
-                img.src = e.target.result;
-                wrapper.style.display = 'block';
+                img.src = e.target.result; // Set URL preview gambar
+                wrapper.style.display = 'block'; // Tampilkan elemen preview
             }
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(input.files[0]); // Baca file gambar
         } else {
-            wrapper.style.display = 'none';
+            wrapper.style.display = 'none'; // Sembunyikan elemen preview jika file dibatalkan
         }
     }
 
-    // Default: Tambahkan 1 baris kosong jika belum ada
+    // Default: Tambahkan 1 baris bahan kosong secara otomatis saat halaman pertama kali dimuat
     document.addEventListener('DOMContentLoaded', function() {
-        addBahanRow();
+        addBahanRow(); // Panggil fungsi tambah baris bahan pertama kali
     });
 </script>
 @endsection
+
 

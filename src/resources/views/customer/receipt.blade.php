@@ -374,69 +374,69 @@
 @section('content')
 
 @php
-    session(['last_order_id' => $pesanan->id_pesanan]);
-    $urutanStatus = ['Diterima', 'Diproses', 'Disiapkan', 'Selesai'];
-    $indexAktif = array_search($pesanan->status, $urutanStatus);
-    if ($indexAktif === false) $indexAktif = -1;
+    session(['last_order_id' => $pesanan->id_pesanan]); // Simpan ID pesanan terakhir ke session
+    $urutanStatus = ['Diterima', 'Diproses', 'Disiapkan', 'Selesai']; // Urutan 4 tahap alur status pesanan
+    $indexAktif = array_search($pesanan->status, $urutanStatus);     // Cari posisi indeks status pesanan saat ini
+    if ($indexAktif === false) $indexAktif = -1;                       // Set -1 jika status Dibatalkan
 
-    $totalSteps = count($urutanStatus) - 1;
-    $fillPercent = $indexAktif >= 0 ? round(($indexAktif / $totalSteps) * 75) : 0;
+    $totalSteps = count($urutanStatus) - 1;                           // Total langkah (3 selisih antar titik)
+    $fillPercent = $indexAktif >= 0 ? round(($indexAktif / $totalSteps) * 75) : 0; // Hitung persentase panjang garis indikator
 @endphp
 
 <div class="receipt-page">
     <div class="receipt-sheet">
 
-        {{-- ===== Logo ===== --}}
+        {{-- ===== Logo Restoran ===== --}}
         <div class="receipt-logo">
             @if(file_exists(public_path('images/logo.png')))
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy"> {{-- Gambar logo restoran --}}
             @else
-                <span>YUMMY<br>CHICKEN</span>
+                <span>YUMMY<br>CHICKEN</span> {{-- Fallback teks logo --}}
             @endif
         </div>
 
         @if($pesanan->status === 'Dibatalkan')
-            {{-- ===== Status Dibatalkan ===== --}}
+            {{-- ===== Tampilan Khusus Jika Status Dibatalkan ===== --}}
             <div class="cancelled-box">
                 <i class="fa-solid fa-circle-xmark"></i>
                 <h3 style="font-size: 1.1rem; font-weight: 700;">Pesanan Dibatalkan</h3>
                 <p style="font-size: 0.82rem; color: #616161; margin-top: 6px;">
                     <strong>Alasan Pembatalan:</strong><br>
                     <span style="font-style: italic; background: #EF5350; color: #FFFFFF; padding: 6px 14px; border-radius: 8px; display: inline-block; margin-top: 6px; border: 1px solid #E53935; font-weight: 500;">
-                        "{{ $pesanan->alasan_pembatalan ?? 'Stok bahan tidak tersedia' }}"
+                        "{{ $pesanan->alasan_pembatalan ?? 'Stok bahan tidak tersedia' }}" {{-- Tampilkan alasan pembatalan dari admin --}}
                     </span>
                 </p>
             </div>
         @else
-            {{-- ===== Progress Tracker ===== --}}
+            {{-- ===== Tracker Progress Status Pesanan Real-time ===== --}}
             <div class="status-tracker" id="live-status-tracker">
-                <div class="tracker-line-fill" style="width: {{ $fillPercent }}%;"></div>
+                <div class="tracker-line-fill" style="width: {{ $fillPercent }}%;"></div> {{-- Garis merah indikator progress --}}
 
                 @foreach($urutanStatus as $i => $label)
                     <div class="status-step {{ $i <= $indexAktif ? 'completed' : '' }} {{ $i === $indexAktif ? 'active' : '' }}">
                         <div class="step-icon">
                             @if($i <= $indexAktif)
-                                <i class="fa-solid fa-check"></i>
+                                <i class="fa-solid fa-check"></i> {{-- Ikon centang untuk tahap yang selesai --}}
                             @endif
                         </div>
-                        <span class="step-label">{{ $label }}</span>
+                        <span class="step-label">{{ $label }}</span> {{-- Label nama tahap (Diterima / Diproses / Disiapkan / Selesai) --}}
                     </div>
                 @endforeach
             </div>
         @endif
 
-        {{-- ===== Nomor Pesanan ===== --}}
-        <div class="order-number">Pesanan #{{ str_pad($pesanan->id_pesanan, 2, '0', STR_PAD_LEFT) }}</div>
+        {{-- ===== Nomor Pesanan & Tipe Pesanan ===== --}}
+        <div class="order-number">Pesanan #{{ str_pad($pesanan->id_pesanan, 2, '0', STR_PAD_LEFT) }}</div> {{-- ID pesanan padded 2 digit --}}
         <div class="order-subtitle">
-            {{ $pesanan->tipe_pesanan === 'Dine-In' ? 'Dine In' : 'Take Away' }}
+            {{ $pesanan->tipe_pesanan === 'Dine-In' ? 'Dine In' : 'Take Away' }} {{-- Tipe pesanan --}}
             @if($pesanan->tipe_pesanan === 'Dine-In' && $pesanan->meja)
-                / {{ $pesanan->meja->nomor_meja }}
+                / {{ $pesanan->meja->nomor_meja }} {{-- Nomor meja --}}
             @endif
         </div>
 
-        <div class="dashed-line"></div>
+        <div class="dashed-line"></div> {{-- Garis putus-putus pembatas --}}
 
-        {{-- ===== Meta: Tanggal / Kasir / Customer ===== --}}
+        {{-- ===== Informasi Tanggal, Kasir, Pemesan ===== --}}
         <div class="meta-cols">
             <div class="meta-left">
                 <span class="meta-line-label">Tanggal</span>
@@ -452,30 +452,30 @@
 
         <div class="dashed-line"></div>
 
-        {{-- ===== Rincian Item ===== --}}
+        {{-- ===== Rincian Item Pesanan ===== --}}
         @foreach($pesanan->detailPesanans as $detail)
             <div class="receipt-item">
                 <div class="receipt-item-main">
-                    <span class="receipt-item-name">{{ $detail->jumlah }}x {{ $detail->menu->nama_menu }}{{ $detail->level_pedas ? ' (Lvl ' . $detail->level_pedas . ')' : '' }}</span>
-                    <span class="receipt-item-price">Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</span>
+                    <span class="receipt-item-name">{{ $detail->jumlah }}x {{ $detail->menu->nama_menu }}{{ $detail->level_pedas ? ' (Lvl ' . $detail->level_pedas . ')' : '' }}</span> {{-- Nama item & level pedas --}}
+                    <span class="receipt-item-price">Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</span> {{-- Subtotal item --}}
                 </div>
 
                 @foreach($detail->tambahans as $t)
                     <div class="receipt-item-addon">
-                        <span style="flex: 1; min-width: 0; word-break: break-word;">+ {{ $t->nama_tambahan }}</span>
-                        <span style="white-space: nowrap; flex-shrink: 0;">Rp {{ number_format($t->harga, 0, ',', '.') }}</span>
+                        <span style="flex: 1; min-width: 0; word-break: break-word;">+ {{ $t->nama_tambahan }}</span> {{-- Nama tambahan --}}
+                        <span style="white-space: nowrap; flex-shrink: 0;">Rp {{ number_format($t->harga, 0, ',', '.') }}</span> {{-- Harga tambahan --}}
                     </div>
                 @endforeach
 
                 @if($detail->catatan)
-                    <div class="receipt-item-note">Catatan : "{{ $detail->catatan }}"</div>
+                    <div class="receipt-item-note">Catatan : "{{ $detail->catatan }}"</div> {{-- Catatan item --}}
                 @endif
             </div>
         @endforeach
 
         <div class="dashed-line"></div>
 
-        {{-- ===== Subtotal & Total ===== --}}
+        {{-- ===== Subtotal & Total Tagihan ===== --}}
         <div class="total-row">
             <span>Subtotal</span>
             <span>Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</span>
@@ -487,18 +487,18 @@
 
         <div class="dashed-line"></div>
 
-        {{-- ===== Payment Method ===== --}}
+        {{-- ===== Rincian Metode Pembayaran ===== --}}
         <div class="payment-section-title">Metode Pembayaran</div>
 
         @if($pesanan->metode_bayar === 'Tunai')
             <div class="payment-row">
                 <span>Tunai</span>
-                <span>Rp {{ number_format($pesanan->uang_dibayar ?? $pesanan->total_harga, 0, ',', '.') }}</span>
+                <span>Rp {{ number_format($pesanan->uang_dibayar ?? $pesanan->total_harga, 0, ',', '.') }}</span> {{-- Nominal uang dibayar --}}
             </div>
             @if($pesanan->kembalian)
                 <div class="payment-row">
                     <span style="color: #9E9E9E; font-size: 0.82rem;">Kembalian</span>
-                    <span style="font-size: 0.82rem;">Rp {{ number_format($pesanan->kembalian, 0, ',', '.') }}</span>
+                    <span style="font-size: 0.82rem;">Rp {{ number_format($pesanan->kembalian, 0, ',', '.') }}</span> {{-- Nominal kembalian --}}
                 </div>
             @endif
         @else
@@ -508,7 +508,7 @@
             </div>
         @endif
 
-        {{-- Status Pembayaran badge --}}
+        {{-- Status Pembayaran Badge (Lunas / Belum Dibayar) --}}
         @if($pesanan->status_pembayaran === 'Lunas')
             <span class="payment-status-badge lunas"><i class="fa-solid fa-circle-check"></i> PEMBAYARAN LUNAS</span>
         @else
@@ -517,7 +517,7 @@
 
         <div class="dashed-line"></div>
 
-        {{-- ===== Footer ===== --}}
+        {{-- ===== Footer Struk ===== --}}
         <div class="receipt-footer">
             {{ \Carbon\Carbon::parse($pesanan->tanggal_waktu)->translatedFormat('d M Y H:i') }} WIB<br>
             Terima kasih atas kunjungan Anda!<br>
@@ -525,7 +525,7 @@
         </div>
     </div>
 
-    {{-- ===== Tombol pesan menu tambahan ===== --}}
+    {{-- ===== Tombol Pesan Menu Tambahan Lagi ===== --}}
     <a href="{{ route('customer.menu') }}" class="btn-order-more">
         <i class="fa-solid fa-plus"></i> Pesan Menu Tambahan Lagi
     </a>
@@ -534,18 +534,20 @@
 
 @section('scripts')
 <script>
-    // Polling status pesanan secara real-time setiap 5 detik (DIPERTAHANKAN)
-    const orderId = {{ $pesanan->id_pesanan }};
+    // Polling status pesanan secara real-time ke API endpoint JSON setiap 5 detik
+    const orderId = {{ $pesanan->id_pesanan }}; // ID pesanan yang dipolling
     setInterval(function() {
-        fetch('/api/order-status/' + orderId)
+        fetch('/api/order-status/' + orderId) // Panggil API JSON orderStatusJson
             .then(res => res.json())
             .then(data => {
+                // Reload halaman otomatis jika terjadi perubahan status pesanan atau status pembayaran di database
                 if (data.status !== "{{ $pesanan->status }}" || data.status_pembayaran !== "{{ $pesanan->status_pembayaran }}") {
-                    window.location.reload();
+                    window.location.reload(); // Reload halaman untuk memperbarui status tracker
                 }
             })
             .catch(err => console.log(err));
-    }, 5000);
+    }, 5000); // Polling interval 5000ms = 5 detik
 </script>
 @endsection
+
 

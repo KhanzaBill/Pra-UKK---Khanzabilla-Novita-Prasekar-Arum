@@ -286,64 +286,66 @@
     {{-- ===== Background Image ===== --}}
     <div class="landing-bg">
         @if(file_exists(public_path('images/landing-bg.jpg')))
-            <img src="{{ asset('images/landing-bg.jpg') }}" alt="Yummy Chicken Background" loading="lazy">
+            <img src="{{ asset('images/landing-bg.jpg') }}" alt="Yummy Chicken Background" loading="lazy"> {{-- Gambar background JPG jika tersedia --}}
         @elseif(file_exists(public_path('images/landing-bg.png')))
-            <img src="{{ asset('images/landing-bg.png') }}" alt="Yummy Chicken Background" loading="lazy">
+            <img src="{{ asset('images/landing-bg.png') }}" alt="Yummy Chicken Background" loading="lazy"> {{-- Gambar background PNG jika tersedia --}}
         @else
-            <div class="no-bg-placeholder"></div>
+            <div class="no-bg-placeholder"></div> {{-- Placeholder warna gelap jika gambar background tidak ditemukan --}}
         @endif
     </div>
 
-    {{-- ===== Flash Messages ===== --}}
+    {{-- ===== Notifikasi Flash Messages ===== --}}
     @if(session('success'))
         <div class="landing-alert landing-alert-success">
-            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+            <i class="fa-solid fa-circle-check"></i> {{ session('success') }} {{-- Tampilkan notifikasi sukses dari session --}}
         </div>
     @endif
     @if(session('error'))
         <div class="landing-alert landing-alert-error">
-            <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }}
+            <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }} {{-- Tampilkan notifikasi error dari session --}}
         </div>
     @endif
 
-    {{-- ===== Content ===== --}}
+    {{-- ===== Area Konten Utama Landing Page ===== --}}
     <div class="landing-content">
 
-        {{-- Logo Circle --}}
+        {{-- Logo Lingkaran Aplikasi --}}
         <div class="logo-circle">
             @if(file_exists(public_path('images/logo.png')))
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" loading="lazy"> {{-- Gambar logo restoran jika file tersedia --}}
             @else
-                <span class="logo-text">YUMMY<br>CHICKEN</span>
+                <span class="logo-text">YUMMY<br>CHICKEN</span> {{-- Teks logo sebagai fallback jika gambar tidak ada --}}
             @endif
         </div>
 
-        {{-- Nomor Meja --}}
+        {{-- Badge Info Nomor Meja Hasil Scan QR Code --}}
         @if($meja || session('nomor_meja'))
             <div class="meja-badge-container">
                 <div class="meja-info">
-                    {{ $meja->nomor_meja ?? session('nomor_meja') }}
+                    {{ $meja->nomor_meja ?? session('nomor_meja') }} {{-- Tampilkan nomor meja dari objek $meja atau dari session --}}
                 </div>
             </div>
         @endif
 
-        {{-- Spacer --}}
+        {{-- Spacer fleksibel untuk mendorong konten ke bawah --}}
         <div class="landing-spacer"></div>
 
-        {{-- Heading --}}
+        {{-- Judul Pertanyaan Pilihan Tipe Pesanan --}}
         <h2 class="landing-heading">Mau pesan apa hari ini?</h2>
 
-        {{-- Action Cards --}}
+        {{-- Form Pilihan Tipe Pesanan (Dine-In / Take Away) --}}
         <form action="{{ route('customer.set_order_type') }}" method="POST" class="action-cards">
-            @csrf
+            @csrf {{-- Token keamanan CSRF Laravel --}}
 
+            {{-- Tombol Pilihan 1: Dine In (Makan di tempat) --}}
             <button type="submit" name="tipe_pesanan" value="Dine-In" class="action-card card-dinein fade-up">
-                <i class="fa-solid fa-utensils card-icon"></i>
+                <i class="fa-solid fa-utensils card-icon"></i> {{-- Ikon garpu & pisau --}}
                 <span class="card-label">Dine In</span>
             </button>
 
+            {{-- Tombol Pilihan 2: Takeaway (Bawa pulang) --}}
             <button type="submit" name="tipe_pesanan" value="Take Away" class="action-card card-takeaway fade-up">
-                <i class="fa-solid fa-box-open card-icon"></i>
+                <i class="fa-solid fa-box-open card-icon"></i> {{-- Ikon bungkus/kotak makanan --}}
                 <span class="card-label">Takeaway</span>
             </button>
         </form>

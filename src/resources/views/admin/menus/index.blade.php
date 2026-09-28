@@ -265,31 +265,35 @@
 
 @section('scripts')
 <script>
+    // Membuka modal form untuk menambah menu tambahan baru
     function openTambahanModal() {
-        document.getElementById('tambahanModalTitle').innerText = 'Tambah Menu Tambahan';
-        document.getElementById('tambahanForm').action = "{{ route('admin.tambahans.store') }}";
-        document.getElementById('tambahanMethod').innerHTML = '';
-        document.getElementById('nama_tambahan').value = '';
-        document.getElementById('id_bahan_tambahan').value = '';
-        document.getElementById('harga_tambahan').value = '';
-        document.getElementById('status_stok_tambahan').value = 'Tersedia';
-        document.getElementById('tambahanModal').style.display = 'flex';
+        document.getElementById('tambahanModalTitle').innerText = 'Tambah Menu Tambahan'; // Set judul modal ke Tambah
+        document.getElementById('tambahanForm').action = "{{ route('admin.tambahans.store') }}"; // Set action form ke store rute
+        document.getElementById('tambahanMethod').innerHTML = ''; // Kosongkan method override (menggunakan POST standar)
+        document.getElementById('nama_tambahan').value = ''; // Reset input nama
+        document.getElementById('id_bahan_tambahan').value = ''; // Reset pilihan bahan
+        document.getElementById('harga_tambahan').value = ''; // Reset input harga
+        document.getElementById('status_stok_tambahan').value = 'Tersedia'; // Default status stok 'Tersedia'
+        document.getElementById('tambahanModal').style.display = 'flex'; // Tampilkan modal
     }
 
+    // Membuka modal form untuk mengedit menu tambahan yang sudah ada
     function editTambahanModal(id, nama, harga, statusStok, idBahan = '') {
-        document.getElementById('tambahanModalTitle').innerText = 'Edit Menu Tambahan';
-        document.getElementById('tambahanForm').action = "/admin/tambahans/" + id;
-        document.getElementById('tambahanMethod').innerHTML = '@method("PUT")';
-        document.getElementById('nama_tambahan').value = nama;
-        document.getElementById('id_bahan_tambahan').value = idBahan || '';
-        document.getElementById('harga_tambahan').value = harga;
-        document.getElementById('status_stok_tambahan').value = statusStok || 'Tersedia';
-        document.getElementById('tambahanModal').style.display = 'flex';
+        document.getElementById('tambahanModalTitle').innerText = 'Edit Menu Tambahan'; // Set judul modal ke Edit
+        document.getElementById('tambahanForm').action = "/admin/tambahans/" + id; // Set action form ke update rute ID
+        document.getElementById('tambahanMethod').innerHTML = '@method("PUT")'; // Masukkan Blade directive PUT method override
+        document.getElementById('nama_tambahan').value = nama; // Fill nama tambahan
+        document.getElementById('id_bahan_tambahan').value = idBahan || ''; // Fill ID bahan terkait
+        document.getElementById('harga_tambahan').value = harga; // Fill harga tambahan
+        document.getElementById('status_stok_tambahan').value = statusStok || 'Tersedia'; // Fill status stok
+        document.getElementById('tambahanModal').style.display = 'flex'; // Tampilkan modal
     }
 
+    // Menutup modal form menu tambahan
     function closeTambahanModal() {
-        document.getElementById('tambahanModal').style.display = 'none';
+        document.getElementById('tambahanModal').style.display = 'none'; // Sembunyikan modal
     }
 </script>
 @endsection
+
 

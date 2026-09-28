@@ -149,37 +149,39 @@
 
 @section('scripts')
 <script>
+    // Memperbarui URL sasaran dan gambar QR Code berdasarkan input Base URL (IP / domain)
     function updateQrUrls() {
-        var baseUrl = document.getElementById('baseUrlInput').value.trim();
-        if (!baseUrl) baseUrl = window.location.origin;
+        var baseUrl = document.getElementById('baseUrlInput').value.trim(); // Ambil input base URL dari form
+        if (!baseUrl) baseUrl = window.location.origin; // Default ke origin domain jika kosong
         if (baseUrl.indexOf('http://') !== 0 && baseUrl.indexOf('https://') !== 0) {
-            baseUrl = 'http://' + baseUrl;
+            baseUrl = 'http://' + baseUrl; // Tambah protokol http:// jika belum ada
         }
-        // Remove trailing slash
+        // Hapus slash di akhir URL
         if (baseUrl.charAt(baseUrl.length - 1) === '/') {
             baseUrl = baseUrl.substring(0, baseUrl.length - 1);
         }
 
-        // Update all QR images, URL texts, and links using data attributes
+        // Ambil semua elemen gambar QR, teks URL, dan link tombol
         var images = document.querySelectorAll('.qr-img');
         var urlTexts = document.querySelectorAll('.qr-url-text');
         var links = document.querySelectorAll('.qr-link');
 
+        // Loop update gambar QR Code menggunakan API qrserver.com
         for (var i = 0; i < images.length; i++) {
             var meja = images[i].getAttribute('data-meja');
             var targetUrl;
 
             if (meja === '' || meja === null) {
-                // Take Away - no meja param
-                targetUrl = baseUrl;
+                targetUrl = baseUrl; // Take Away: landing tanpa parameter meja
             } else {
-                targetUrl = baseUrl + '/?meja=' + meja;
+                targetUrl = baseUrl + '/?meja=' + meja; // Dine In: landing dengan parameter meja
             }
 
-            // Set QR image
+            // Generate gambar QR Code otomatis via API QRServer
             images[i].src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(targetUrl);
         }
 
+        // Loop update tampilan teks URL di bawah kartu QR
         for (var j = 0; j < urlTexts.length; j++) {
             var meja2 = urlTexts[j].getAttribute('data-meja');
             var targetUrl2;
@@ -190,9 +192,10 @@
                 targetUrl2 = baseUrl + '/?meja=' + meja2;
             }
 
-            urlTexts[j].innerText = targetUrl2;
+            urlTexts[j].innerText = targetUrl2; // Set teks URL yang dibaca
         }
 
+        // Loop update atribut href link tombol "Buka Link"
         for (var k = 0; k < links.length; k++) {
             var meja3 = links[k].getAttribute('data-meja');
             var targetUrl3;
@@ -203,13 +206,14 @@
                 targetUrl3 = baseUrl + '/?meja=' + meja3;
             }
 
-            links[k].href = targetUrl3;
+            links[k].href = targetUrl3; // Set atribut href tombol link
         }
     }
 
-    // Run on page load
+    // Jalankan fungsi update QR Code secara otomatis saat halaman selesai dimuat
     document.addEventListener('DOMContentLoaded', function() {
-        updateQrUrls();
+        updateQrUrls(); // Generate QR Code awal
     });
 </script>
 @endsection
+

@@ -468,12 +468,10 @@
 
 @section('content')
 @php
-    $namaClean = strtolower(trim($menu->nama_menu));
-    $isMinuman = $menu->kategori === 'Minuman';
+    $namaClean = strtolower(trim($menu->nama_menu)); // Konversi nama menu ke huruf kecil dan hapus spasi tepi
+    $isMinuman = $menu->kategori === 'Minuman';     // Flag apakah kategori menu adalah Minuman
 
-    // Daftar minuman dengan pilihan Suhu (Dingin / Panas):
-    // 1. Teh dan Jeruk
-    // 2. Extra Joss, Extra Joss Susu, Energen, Adem Sari, Segar Dingin, Susu Putih/Coklat, Dancow, Milo/Hilo, Beng Beng, Chocolatos, Coffeemix, Nescafe, Luwak White Coffee, Caffino, Torabika, Top Coffee, varian Good Day, Nutrisari Aneka Rasa
+    // Daftar minuman yang memiliki pilihan Suhu (Dingin / Panas)
     $suhuOptionsList = [
         'teh dingin/panas', 'jeruk dingin/panas',
         'extra joss', 'extra joss susu', 'energen', 'adem sari', 'segar dingin',
@@ -482,14 +480,14 @@
         'top coffee', 'nutrisari aneka rasa'
     ];
 
-    $hasSuhuOption = false;
+    $hasSuhuOption = false; // Inisialisasi opsi suhu sebagai false
     if ($isMinuman) {
         if (in_array($namaClean, $suhuOptionsList) || str_starts_with($namaClean, 'good day') || str_contains($namaClean, 'teh') || str_contains($namaClean, 'jeruk')) {
-            $hasSuhuOption = true;
+            $hasSuhuOption = true; // Aktifkan opsi suhu jika menu termasuk dalam daftar minuman
         }
     }
 
-    // Pilihan varian:
+    // Pilihan varian rasa/opsi khusus
     $varianType = null; // 'susu' | 'milohilo' | 'indomie' | 'telur' | null
     if ($namaClean === 'susu putih/coklat' || str_contains($namaClean, 'susu putih/coklat') || str_contains($namaClean, 'susu')) {
         $varianType = 'susu';
@@ -501,25 +499,34 @@
         $varianType = 'telur';
     }
 
+    // Pilihan Bagian Ayam (Dada, Paha Atas, Paha Bawah, Sayap) khusus untuk Paket Ayam
+    $hasBagianAyamOption = false;
+    if ($menu->kategori === 'Paket') {
+        if (!str_contains($namaClean, 'paket 1 -') && !str_contains($namaClean, 'paket 2 -') && !str_contains($namaClean, 'paket 3 -') && !str_contains($namaClean, 'paket 4 -')) {
+            $hasBagianAyamOption = true;
+        }
+    }
+
     // Catatan disembunyikan untuk: Makanan dan Air Mineral 600ml
     $hideCatatan = $menu->kategori === 'Makanan' || $namaClean === 'air mineral 600ml' || str_contains($namaClean, 'air mineral');
 @endphp
 
+{{-- Form Tambah ke Keranjang Belanja --}}
 <form action="{{ route('customer.add_to_cart') }}" method="POST" id="form-add-to-cart" class="detail-page">
-    @csrf
-    <input type="hidden" name="id_menu" value="{{ $menu->id_menu }}">
+    @csrf {{-- Token keamanan CSRF Laravel --}}
+    <input type="hidden" name="id_menu" value="{{ $menu->id_menu }}"> {{-- ID menu yang dipesan --}}
     @if(!empty($editHash))
-        <input type="hidden" name="old_hash" value="{{ $editHash }}">
+        <input type="hidden" name="old_hash" value="{{ $editHash }}"> {{-- Hash item lama jika mode edit --}}
     @endif
 
-    {{-- ===== Top Image ===== --}}
+    {{-- ===== Gambar Foto Menu atas ===== --}}
     <div class="detail-image-wrapper">
         <a href="{{ !empty($editHash) ? route('customer.cart') : route('customer.menu', ['kategori' => $menu->kategori]) }}" class="back-btn">
-            <i class="fa-solid fa-chevron-left"></i>
+            <i class="fa-solid fa-chevron-left"></i> {{-- Tombol kembali ke menu / keranjang --}}
         </a>
 
         @if($menu->foto)
-            <img src="{{ asset('storage/' . $menu->foto) }}" alt="{{ $menu->nama_menu }}" loading="lazy">
+            <img src="{{ asset('storage/' . $menu->foto) }}" alt="{{ $menu->nama_menu }}" loading="lazy"> {{-- Tampilkan foto menu --}}
         @else
             <div class="img-placeholder">
                 @if($menu->kategori === 'Paket')
@@ -533,25 +540,25 @@
         @endif
     </div>
 
-    {{-- ===== Validation Errors ===== --}}
+    {{-- ===== Alert Pesan Validation Error ===== --}}
     @if($errors->any())
         <div class="validation-error">
             <i class="fa-solid fa-circle-exclamation"></i>
-            {{ $errors->first() }}
+            {{ $errors->first() }} {{-- Tampilkan pesan validasi error pertama --}}
         </div>
     @endif
 
-    {{-- ===== Info ===== --}}
+    {{-- ===== Informasi Judul, Harga & Deskripsi Menu ===== --}}
     <div class="detail-info">
-        <h1 class="detail-title">{{ $menu->nama_menu }}</h1>
-        <div class="detail-price">Rp {{ number_format($menu->harga, 0, ',', '.') }}</div>
-        <p class="detail-desc">{{ $menu->deskripsi }}</p>
+        <h1 class="detail-title">{{ $menu->nama_menu }}</h1> {{-- Nama menu --}}
+        <div class="detail-price">Rp {{ number_format($menu->harga, 0, ',', '.') }}</div> {{-- Format rupiah harga menu --}}
+        <p class="detail-desc">{{ $menu->deskripsi }}</p> {{-- Deskripsi menu --}}
     </div>
 
-    {{-- ===== Level Pedas (hanya jika opsi_pedas = Ya) ===== --}}
+    {{-- ===== Pilihan Level Pedas (jika opsi_pedas = Ya) ===== --}}
     @if($menu->opsi_pedas === 'Ya')
         @php
-            $selectedLevel = $editItem['level_pedas'] ?? 2;
+            $selectedLevel = $editItem['level_pedas'] ?? 2; // Default level pedas 2 jika tidak ada
         @endphp
         <div class="detail-section">
             <div class="section-title">
@@ -569,6 +576,46 @@
             </div>
         </div>
     @endif
+
+    {{-- ===== Pilihan Bagian Ayam (Dada, Paha Atas, Paha Bawah, Sayap) ===== --}}
+    @if($hasBagianAyamOption)
+        @php
+            $selectedBagian = $editItem['bagian_ayam'] ?? 'Paha Bawah';
+        @endphp
+        <div class="detail-section">
+            <div class="section-title">
+                <span>Pilih Bagian Ayam</span>
+                <span class="badge-wajib"><i class="fa-solid fa-circle-exclamation"></i> Wajib</span>
+            </div>
+            <div class="option-pill-grid">
+                <label class="option-pill-card">
+                    <input type="radio" name="bagian_ayam" value="Dada" {{ $selectedBagian === 'Dada' ? 'checked' : '' }}>
+                    <div class="option-pill-content">
+                        <span class="option-pill-title">Dada</span>
+                    </div>
+                </label>
+                <label class="option-pill-card">
+                    <input type="radio" name="bagian_ayam" value="Paha Atas" {{ $selectedBagian === 'Paha Atas' ? 'checked' : '' }}>
+                    <div class="option-pill-content">
+                        <span class="option-pill-title">Paha Atas</span>
+                    </div>
+                </label>
+                <label class="option-pill-card">
+                    <input type="radio" name="bagian_ayam" value="Paha Bawah" {{ $selectedBagian === 'Paha Bawah' ? 'checked' : '' }}>
+                    <div class="option-pill-content">
+                        <span class="option-pill-title">Paha Bawah</span>
+                    </div>
+                </label>
+                <label class="option-pill-card">
+                    <input type="radio" name="bagian_ayam" value="Sayap" {{ $selectedBagian === 'Sayap' ? 'checked' : '' }}>
+                    <div class="option-pill-content">
+                        <span class="option-pill-title">Sayap</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+    @endif
+
 
 
     @if($varianType)
